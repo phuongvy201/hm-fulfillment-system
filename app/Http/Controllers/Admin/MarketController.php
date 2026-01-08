@@ -57,7 +57,7 @@ class MarketController extends Controller
      */
     public function show(Market $market)
     {
-        $market->load(['workshops.products', 'pricingRules.product']);
+        $market->load(['workshops.products']);
 
         return view('admin.markets.show', compact('market'));
     }

@@ -42,6 +42,9 @@ class PricingTierController extends Controller
             'priority' => ['nullable', 'integer', 'min:0'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'in:active,inactive'],
+            'min_orders' => ['nullable', 'integer', 'min:0'],
+            'auto_assign' => ['nullable', 'boolean'],
+            'reset_period' => ['required', 'in:monthly,quarterly,yearly,never'],
         ]);
 
         // Auto-generate slug if not provided
@@ -84,6 +87,9 @@ class PricingTierController extends Controller
             'priority' => ['nullable', 'integer', 'min:0'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'in:active,inactive'],
+            'min_orders' => ['nullable', 'integer', 'min:0'],
+            'auto_assign' => ['nullable', 'boolean'],
+            'reset_period' => ['required', 'in:monthly,quarterly,yearly,never'],
         ]);
 
         $pricingTier->update($validated);

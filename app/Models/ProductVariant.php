@@ -66,6 +66,22 @@ class ProductVariant extends Model
     }
 
     /**
+     * Get the workshop prices for the variant.
+     */
+    public function workshopPrices(): HasMany
+    {
+        return $this->hasMany(WorkshopPrice::class, 'variant_id');
+    }
+
+    /**
+     * Get the shipping prices for the variant.
+     */
+    public function shippingPrices(): HasMany
+    {
+        return $this->hasMany(ProductShippingPrice::class, 'variant_id');
+    }
+
+    /**
      * Get the attributes for the variant.
      */
     public function variantAttributes(): HasMany

@@ -26,6 +26,7 @@
                     Dashboard
                 </a>
             </li>
+            
             <li>
                 <a href="#" class="menu-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -35,10 +36,52 @@
                 </a>
             </li>
 
+            <!-- Finance Management -->
+            @canAnyPermission(['top-up.view', 'top-up.create', 'credit.view', 'wallet.view'])
+            <li class="pt-4">
+                <p class="px-4 py-2 text-xs font-semibold uppercase" style="color: #9CA3AF;">Finance Management</p>
+            </li>
+
+            @canAnyPermission(['top-up.view', 'top-up.create'])
+            <li>
+                <a href="{{ auth()->user()->hasPermission('top-up.view') ? route('admin.top-up-requests.index') : route('customer.top-up-requests.create') }}" class="menu-item {{ ($activeMenu === 'top-up-requests' || $activeMenu === 'customer-top-up-requests') ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Top-up
+                </a>
+            </li>
+            @endcanAnyPermission
+
+            @canPermission('credit.view')
+            <li>
+                <a href="{{ route('admin.credits.index') }}" class="menu-item {{ $activeMenu === 'credits' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Credit 
+                </a>
+            </li>
+            @endcanPermission
+
+            @canPermission('wallet.view')
+            <li>
+                <a href="{{ route('admin.wallets.index') }}" class="menu-item {{ $activeMenu === 'wallets' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    Wallet 
+                </a>
+            </li>
+            @endcanPermission
+            @endcanAnyPermission
             <!-- Product Management -->
+            @canAnyPermission(['products.view', 'markets.view', 'workshops.view'])
             <li class="pt-4">
                 <p class="px-4 py-2 text-xs font-semibold uppercase" style="color: #9CA3AF;">Product Management</p>
             </li>
+            
+            @canPermission('markets.view')
             <li>
                 <a href="{{ route('admin.markets.index') }}" class="menu-item {{ $activeMenu === 'markets' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -47,6 +90,9 @@
                     Markets
                 </a>
             </li>
+            @endcanPermission
+
+            @canPermission('workshops.view')
             <li>
                 <a href="{{ route('admin.workshops.index') }}" class="menu-item {{ $activeMenu === 'workshops' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -55,6 +101,9 @@
                     Workshops
                 </a>
             </li>
+            @endcanPermission
+
+            @canPermission('products.view')
             <li>
                 <a href="{{ route('admin.products.index') }}" class="menu-item {{ $activeMenu === 'products' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -63,29 +112,41 @@
                     Products
                 </a>
             </li>
+            @endcanPermission
+            @endcanAnyPermission
 
             <!-- Pricing Management -->
+            @canAnyPermission(['pricing-tiers.view', 'pricing-tiers.users'])
             <li class="pt-4">
-                <p class="px-4 py-2 text-xs font-semibold uppercase" style="color: #9CA3AF;">Pricing Management</p>
+                <p class="px-4 py-2 text-xs font-semibold uppercase" style="color: #9CA3AF;">Tier Management</p>
             </li>
+            
+            @canPermission('pricing-tiers.view')
             <li>
                 <a href="{{ route('admin.pricing-tiers.index') }}" class="menu-item {{ $activeMenu === 'pricing-tiers' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    Pricing Tiers
+                    Tier Rules
                 </a>
             </li>
+            @endcanPermission
+
+            @canPermission('pricing-tiers.users')
             <li>
-                <a href="{{ route('admin.pricing-rules.index') }}" class="menu-item {{ $activeMenu === 'pricing-rules' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
+                <a href="{{ route('admin.user-pricing-tiers.index') }}" class="menu-item {{ $activeMenu === 'user-pricing-tiers' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                     </svg>
-                    Pricing Rules
+                    User Tier 
                 </a>
             </li>
+            @endcanPermission
+            @endcanAnyPermission
+            
 
             <!-- Operations -->
+            @canPermission('products.view')
             <li class="pt-4">
                 <p class="px-4 py-2 text-xs font-semibold uppercase" style="color: #9CA3AF;">Operations</p>
             </li>
@@ -97,6 +158,8 @@
                     Import
                 </a>
             </li>
+            @endcanPermission
+            @canPermission('inventory.view')
             <li>
                 <a href="#" class="menu-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,6 +168,8 @@
                     Inventory
                 </a>
             </li>
+            @endcanPermission
+            @canPermission('customers.view')
             <li>
                 <a href="#" class="menu-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -113,12 +178,14 @@
                     Customers
                 </a>
             </li>
-
+            @endcanPermission
             <!-- Administration -->
-            @if(auth()->user()->isAdmin())
+            @canAnyPermission(['users.view', 'permissions.view'])
             <li class="pt-4">
                 <p class="px-4 py-2 text-xs font-semibold uppercase" style="color: #9CA3AF;">Administration</p>
             </li>
+            
+            @canPermission('users.view')
             <li>
                 <a href="{{ route('admin.users.index') }}" class="menu-item {{ $activeMenu === 'users' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,6 +194,9 @@
                     Users
                 </a>
             </li>
+            @endcanPermission
+
+            @canPermission('users.view')
             <li>
                 <a href="{{ route('admin.teams.index') }}" class="menu-item {{ $activeMenu === 'teams' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -135,6 +205,9 @@
                     Teams
                 </a>
             </li>
+            @endcanPermission
+
+            @if(auth()->user()->isAdmin())
             <li>
                 <a href="#" class="menu-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,6 +226,18 @@
                 </a>
             </li>
             @endif
+
+            @if(auth()->user()->isSuperAdmin())
+            <li>
+                <a href="{{ route('admin.permissions.index') }}" class="menu-item {{ $activeMenu === 'permissions' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                    Permissions
+                </a>
+            </li>
+            @endif
+            @endcanAnyPermission
         </ul>
     </nav>
 

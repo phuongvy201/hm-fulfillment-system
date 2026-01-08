@@ -24,13 +24,6 @@ class Market extends Model
         return $this->hasMany(Workshop::class);
     }
 
-    /**
-     * Get the pricing rules for the market.
-     */
-    public function pricingRules(): HasMany
-    {
-        return $this->hasMany(PricingRule::class);
-    }
 
     /**
      * Get the user custom prices for the market.

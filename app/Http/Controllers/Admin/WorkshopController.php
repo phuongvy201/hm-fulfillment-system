@@ -16,7 +16,7 @@ class WorkshopController extends Controller
     public function index()
     {
         $workshops = Workshop::with(['market'])
-            ->withCount(['skus', 'prices'])
+            ->withCount(['skus', 'prices', 'products'])
             ->latest()
             ->paginate(15);
 
@@ -85,12 +85,38 @@ class WorkshopController extends Controller
             'product_types' => ['nullable', 'array'],
             'product_types.*' => ['string', 'max:255'],
             'status' => ['required', 'in:active,inactive'],
+            // API Settings
+            'api_enabled' => ['nullable', 'boolean'],
+            'api_type' => ['nullable', 'string', 'in:rest,soap,custom'],
+            'api_endpoint' => ['nullable', 'url', 'max:500'],
+            'api_key' => ['nullable', 'string', 'max:255'],
+            'api_secret' => ['nullable', 'string', 'max:255'],
+            'api_settings' => ['nullable', 'json'],
+            'api_notes' => ['nullable', 'string'],
         ]);
+
+        // Convert api_enabled checkbox
+        $validated['api_enabled'] = $request->has('api_enabled');
 
         $workshop->update($validated);
 
         return redirect()->route('admin.workshops.index')
             ->with('success', 'Workshop updated successfully.');
+    }
+
+    /**
+     * Test API connection.
+     */
+    public function testApi(Workshop $workshop)
+    {
+        $apiService = app(\App\Services\WorkshopApiService::class);
+        $result = $apiService->testConnection($workshop);
+
+        if ($result['success']) {
+            return back()->with('success', 'API connection successful!');
+        } else {
+            return back()->withErrors(['error' => 'API connection failed: ' . $result['error']]);
+        }
     }
 
     /**

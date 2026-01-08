@@ -23,9 +23,26 @@
                 <div>
                     <h3 class="text-lg font-semibold">{{ $tier->name }}</h3>
                     <p class="text-sm text-gray-500">{{ $tier->slug }}</p>
-                    <div class="flex gap-4 mt-2 text-sm text-gray-500">
-                        <span>{{ $tier->product_tier_prices_count }} products</span>
+                    <div class="flex flex-wrap gap-4 mt-2 text-sm text-gray-500">
                         <span>{{ $tier->user_pricing_tiers_count }} users</span>
+                        @if($tier->auto_assign && $tier->min_orders !== null)
+                            <span class="px-2 py-1 rounded" style="background-color: #DBEAFE; color: #1E40AF;">
+                                ≥ {{ number_format($tier->min_orders) }} đơn/tháng
+                            </span>
+                        @elseif(!$tier->auto_assign)
+                            <span class="px-2 py-1 rounded" style="background-color: #F3E8FF; color: #7C3AED;">
+                                Gán thủ công
+                            </span>
+                        @else
+                            <span class="px-2 py-1 rounded" style="background-color: #FEF3C7; color: #92400E;">
+                                Mặc định
+                            </span>
+                        @endif
+                        @if($tier->reset_period)
+                            <span class="text-xs">
+                                Reset: {{ $tier->reset_period === 'monthly' ? 'Hàng tháng' : ($tier->reset_period === 'quarterly' ? 'Hàng quý' : ($tier->reset_period === 'yearly' ? 'Hàng năm' : 'Không reset')) }}
+                            </span>
+                        @endif
                     </div>
                 </div>
             </div>

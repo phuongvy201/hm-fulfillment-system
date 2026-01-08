@@ -15,10 +15,19 @@ class Workshop extends Model
         'description',
         'product_types',
         'status',
+        'api_type',
+        'api_endpoint',
+        'api_key',
+        'api_secret',
+        'api_settings',
+        'api_enabled',
+        'api_notes',
     ];
 
     protected $casts = [
         'product_types' => 'array',
+        'api_settings' => 'array',
+        'api_enabled' => 'boolean',
     ];
 
     /**
@@ -59,5 +68,13 @@ class Workshop extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    /**
+     * Get the orders for the workshop.
+     */
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
     }
 }

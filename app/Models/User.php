@@ -81,6 +81,54 @@ class User extends Authenticatable
     }
 
     /**
+     * Get the wallet for the user.
+     */
+    public function wallet()
+    {
+        return $this->hasOne(Wallet::class);
+    }
+
+    /**
+     * Get the credit for the user.
+     */
+    public function credit()
+    {
+        return $this->hasOne(Credit::class);
+    }
+
+    /**
+     * Get the orders for the user.
+     */
+    public function orders()
+    {
+        return $this->hasMany(Order::class);
+    }
+
+    /**
+     * Get the top-up requests for the user.
+     */
+    public function topUpRequests()
+    {
+        return $this->hasMany(TopUpRequest::class);
+    }
+
+    /**
+     * Get the debt payment requests for the user.
+     */
+    public function debtPaymentRequests()
+    {
+        return $this->hasMany(DebtPaymentRequest::class);
+    }
+
+    /**
+     * Get the wallet transactions for the user.
+     */
+    public function walletTransactions()
+    {
+        return $this->hasMany(WalletTransaction::class);
+    }
+
+    /**
      * Check if user has a specific role.
      */
     public function hasRole($roleSlug): bool
@@ -102,5 +150,39 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->hasRole('super-admin') || $this->hasRole('it-admin');
+    }
+
+    /**
+     * Check if user has a specific permission.
+     */
+    public function hasPermission(string $permissionSlug): bool
+    {
+        if (!$this->role) {
+            return false;
+        }
+
+        // Super-admin has all permissions
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->role->hasPermission($permissionSlug);
+    }
+
+    /**
+     * Check if user has any of the given permissions.
+     */
+    public function hasAnyPermission(array $permissionSlugs): bool
+    {
+        if (!$this->role) {
+            return false;
+        }
+
+        // Super-admin has all permissions
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        return $this->role->permissions()->whereIn('slug', $permissionSlugs)->exists();
     }
 }

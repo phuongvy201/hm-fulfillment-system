@@ -14,6 +14,7 @@ class WorkshopPrice extends Model
         'base_price',
         'currency',
         'status',
+        'shipping_type',
         'valid_from',
         'valid_to',
     ];

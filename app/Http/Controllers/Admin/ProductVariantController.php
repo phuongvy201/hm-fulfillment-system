@@ -127,6 +127,65 @@ class ProductVariantController extends Controller
     }
 
     /**
+     * Bulk delete variants.
+     */
+    public function bulkDestroy(Request $request, Product $product)
+    {
+        // Handle JSON string from form
+        $variantIdsInput = $request->input('variant_ids');
+        $variantIds = [];
+        
+        if (is_string($variantIdsInput)) {
+            $decoded = json_decode($variantIdsInput, true);
+            $variantIds = is_array($decoded) ? $decoded : [];
+        } elseif (is_array($variantIdsInput)) {
+            $variantIds = $variantIdsInput;
+        }
+
+        if (empty($variantIds)) {
+            return redirect()->route('admin.products.show', $product)
+                ->with('error', 'Không có variant nào được chọn để xóa.');
+        }
+
+        // Validate each variant ID exists and belongs to this product
+        $validVariantIds = [];
+        foreach ($variantIds as $variantId) {
+            $variant = ProductVariant::find($variantId);
+            if ($variant && $variant->product_id === $product->id) {
+                $validVariantIds[] = $variantId;
+            }
+        }
+
+        if (empty($validVariantIds)) {
+            return redirect()->route('admin.products.show', $product)
+                ->with('error', 'Không có variant hợp lệ nào được chọn.');
+        }
+
+        $deleted = 0;
+        $errors = [];
+
+        foreach ($validVariantIds as $variantId) {
+            try {
+                $variant = ProductVariant::find($variantId);
+                if ($variant && $variant->product_id === $product->id) {
+                    $variant->delete();
+                    $deleted++;
+                }
+            } catch (\Exception $e) {
+                $errors[] = "Failed to delete variant ID: {$variantId}";
+            }
+        }
+
+        $message = "Successfully deleted {$deleted} variant(s).";
+        if (!empty($errors)) {
+            $message .= " " . count($errors) . " error(s) occurred.";
+        }
+
+        return redirect()->route('admin.products.show', $product)
+            ->with('success', $message);
+    }
+
+    /**
      * Show the form for bulk creating variants.
      */
     public function bulkCreate(Product $product)

@@ -68,13 +68,6 @@ class Product extends Model
         return $this->hasMany(ProductTierPrice::class);
     }
 
-    /**
-     * Get the pricing rules for the product.
-     */
-    public function pricingRules(): HasMany
-    {
-        return $this->hasMany(PricingRule::class);
-    }
 
     /**
      * Get the workshop product SKU codes for the product.
@@ -82,5 +75,29 @@ class Product extends Model
     public function workshopProductSkuCodes(): HasMany
     {
         return $this->hasMany(WorkshopProductSkuCode::class);
+    }
+
+    /**
+     * Get the shipping prices for the product.
+     */
+    public function shippingPrices(): HasMany
+    {
+        return $this->hasMany(ProductShippingPrice::class);
+    }
+
+    /**
+     * Get the images for the product.
+     */
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    /**
+     * Get the primary image for the product.
+     */
+    public function primaryImage(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)->where('is_primary', true);
     }
 }

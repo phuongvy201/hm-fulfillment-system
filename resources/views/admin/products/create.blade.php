@@ -24,7 +24,7 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('admin.products.store') }}">
+        <form method="POST" action="{{ route('admin.products.store') }}" enctype="multipart/form-data">
             @csrf
 
             <div class="space-y-6">
@@ -111,6 +111,23 @@
                     </select>
                 </div>
 
+                <div>
+                    <label for="images" class="block text-sm font-semibold mb-2" style="color: #111827;">Product Images</label>
+                    <input 
+                        type="file" 
+                        id="images" 
+                        name="images[]" 
+                        multiple
+                        accept="image/*"
+                        class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all"
+                        style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                        onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
+                        onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
+                    >
+                    <p class="text-xs mt-1" style="color: #6B7280;">You can upload multiple images. Accepted formats: JPG, PNG, GIF, WEBP (max 5MB per image)</p>
+                    <div id="image-preview" class="mt-4 grid grid-cols-3 gap-4"></div>
+                </div>
+
                 <div class="flex items-center gap-4 pt-4">
                     <button 
                         type="submit"
@@ -131,6 +148,28 @@
 </div>
 @endsection
 
+@push('scripts')
+<script>
+    // Image preview
+    document.getElementById('images')?.addEventListener('change', function(e) {
+        const preview = document.getElementById('image-preview');
+        preview.innerHTML = '';
+        
+        Array.from(e.target.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const div = document.createElement('div');
+                div.className = 'relative';
+                div.innerHTML = `
+                    <img src="${e.target.result}" alt="Preview" class="w-full h-32 object-cover rounded-lg border" style="border-color: #E5E7EB;">
+                `;
+                preview.appendChild(div);
+            };
+            reader.readAsDataURL(file);
+        });
+    });
+</script>
+@endpush
 @php
     $activeMenu = 'products';
 @endphp

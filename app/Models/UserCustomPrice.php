@@ -15,6 +15,7 @@ class UserCustomPrice extends Model
         'price',
         'currency',
         'status',
+        'shipping_type',
         'valid_from',
         'valid_to',
     ];

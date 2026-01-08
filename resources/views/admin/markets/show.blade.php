@@ -99,10 +99,6 @@
                     <p class="text-sm text-gray-500">Products</p>
                     <p class="text-2xl font-bold text-gray-900">{{ $market->workshops->sum(function($workshop) { return $workshop->products->count(); }) }}</p>
                 </div>
-                <div>
-                    <p class="text-sm text-gray-500">Pricing Rules</p>
-                    <p class="text-2xl font-bold text-gray-900">{{ $market->pricingRules->count() }}</p>
-                </div>
             </div>
         </div>
 
@@ -112,9 +108,6 @@
             <div class="space-y-2">
                 <a href="{{ route('admin.workshops.create', ['market_id' => $market->id]) }}" class="block w-full px-4 py-2 rounded-lg text-sm font-medium text-center transition-all border" style="color: #2563EB; border-color: #DBEAFE; background-color: #EFF6FF;" onmouseover="this.style.backgroundColor='#DBEAFE';" onmouseout="this.style.backgroundColor='#EFF6FF';">
                     + Add Workshop
-                </a>
-                <a href="{{ route('admin.pricing-rules.create', ['market_id' => $market->id]) }}" class="block w-full px-4 py-2 rounded-lg text-sm font-medium text-center transition-all border" style="color: #2563EB; border-color: #DBEAFE; background-color: #EFF6FF;" onmouseover="this.style.backgroundColor='#DBEAFE';" onmouseout="this.style.backgroundColor='#EFF6FF';">
-                    + Add Pricing Rule
                 </a>
             </div>
         </div>

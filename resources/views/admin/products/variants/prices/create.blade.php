@@ -3,7 +3,7 @@
 @section('title', 'Set Price for Variant - ' . config('app.name', 'Laravel'))
 
 @section('header-title', 'Set Price for Variant: ' . $variant->display_name)
-@section('header-subtitle', 'Configure pricing for this variant by tier and market')
+@section('header-subtitle', 'Configure pricing for this variant by market')
 
 @section('header-actions')
 <a href="{{ route('admin.products.show', $product) }}" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all border" style="color: #374151; border-color: #D1D5DB;" onmouseover="this.style.backgroundColor='#F3F4F6';" onmouseout="this.style.backgroundColor='transparent';">
@@ -52,12 +52,8 @@
                         <thead>
                             <tr class="border-b-2" style="border-color: #E5E7EB;">
                                 <th class="px-4 py-3 text-left font-semibold text-gray-700 bg-gray-50">Market</th>
-                                @foreach($tiers as $tier)
-                                <th class="px-4 py-3 text-center font-semibold text-gray-700 bg-gray-50 min-w-[200px]">
-                                    <div>{{ $tier->name }}</div>
-                                    <div class="text-xs font-normal text-gray-500 mt-1">Priority: {{ $tier->priority }}</div>
-                                </th>
-                                @endforeach
+                                <th class="px-4 py-3 text-center font-semibold text-gray-700 bg-gray-50 min-w-[200px]">Price</th>
+                                <th class="px-4 py-3 text-center font-semibold text-gray-700 bg-gray-50 min-w-[150px]">Status</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y" style="divide-color: #E5E7EB;">
@@ -72,52 +68,44 @@
                                         @endif
                                     </div>
                                 </td>
-                                @foreach($tiers as $tier)
                                 <td class="px-4 py-4 align-top">
                                     @php
-                                        $priceKey = $marketItem->id . '_' . $tier->id;
-                                        $existingPrice = $existingPrices[$priceKey] ?? null;
+                                        $existingPrice = $existingPrices[$marketItem->id] ?? null;
                                     @endphp
-                                    <div class="space-y-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-medium text-gray-600">{{ $marketItem->currency_symbol ?? $marketItem->currency }}</span>
                                         <input 
-                                            type="hidden" 
-                                            name="prices[{{ $marketItem->id }}_{{ $tier->id }}][market_id]" 
-                                            value="{{ $marketItem->id }}"
-                                        >
-                                        <input 
-                                            type="hidden" 
-                                            name="prices[{{ $marketItem->id }}_{{ $tier->id }}][pricing_tier_id]" 
-                                            value="{{ $tier->id }}"
-                                        >
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-xs text-gray-600">{{ $marketItem->currency_symbol ?? $marketItem->currency }}</span>
-                                            <input 
-                                                type="number" 
-                                                name="prices[{{ $marketItem->id }}_{{ $tier->id }}][base_price]" 
-                                                value="{{ old("prices.{$marketItem->id}_{$tier->id}.base_price", $existingPrice ? $existingPrice->base_price : '') }}"
-                                                step="0.01"
-                                                min="0"
-                                                placeholder="0.00"
-                                                class="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 transition-all text-sm"
-                                                style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
-                                                onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 2px rgba(37, 99, 235, 0.1)';"
-                                                onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
-                                            >
-                                        </div>
-                                        <select 
-                                            name="prices[{{ $marketItem->id }}_{{ $tier->id }}][status]"
-                                            class="w-full px-2 py-1.5 border rounded-lg focus:outline-none focus:ring-1 transition-all text-xs"
+                                            type="number" 
+                                            name="prices[{{ $marketItem->id }}][base_price]" 
+                                            value="{{ old("prices.{$marketItem->id}.base_price", $existingPrice ? $existingPrice->base_price : '') }}"
+                                            step="0.01"
+                                            min="0"
+                                            placeholder="0.00"
+                                            class="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 transition-all text-sm"
                                             style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                                            onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 2px rgba(37, 99, 235, 0.1)';"
+                                            onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
                                         >
-                                            <option value="active" {{ old("prices.{$marketItem->id}_{$tier->id}.status", $existingPrice ? $existingPrice->status : 'active') === 'active' ? 'selected' : '' }}>Active</option>
-                                            <option value="inactive" {{ old("prices.{$marketItem->id}_{$tier->id}.status", $existingPrice ? $existingPrice->status : 'active') === 'inactive' ? 'selected' : '' }}>Inactive</option>
-                                        </select>
-                                        @if($existingPrice)
-                                        <div class="text-xs text-green-600">✓ Saved</div>
-                                        @endif
                                     </div>
+                                    @if($existingPrice)
+                                    <div class="text-xs text-green-600 mt-1">✓ Saved</div>
+                                    @endif
                                 </td>
-                                @endforeach
+                                <td class="px-4 py-4 align-top">
+                                    <input 
+                                        type="hidden" 
+                                        name="prices[{{ $marketItem->id }}][market_id]" 
+                                        value="{{ $marketItem->id }}"
+                                    >
+                                    <select 
+                                        name="prices[{{ $marketItem->id }}][status]"
+                                        class="w-full px-2 py-1.5 border rounded-lg focus:outline-none focus:ring-1 transition-all text-xs"
+                                        style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                                    >
+                                        <option value="active" {{ old("prices.{$marketItem->id}.status", $existingPrice ? $existingPrice->status : 'active') === 'active' ? 'selected' : '' }}>Active</option>
+                                        <option value="inactive" {{ old("prices.{$marketItem->id}.status", $existingPrice ? $existingPrice->status : 'active') === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                                    </select>
+                                </td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -147,8 +135,3 @@
 @php
     $activeMenu = 'products';
 @endphp
-
-
-
-
-

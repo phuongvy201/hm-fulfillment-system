@@ -13,6 +13,14 @@ class PricingTier extends Model
         'priority',
         'description',
         'status',
+        'min_orders',
+        'auto_assign',
+        'reset_period',
+    ];
+
+    protected $casts = [
+        'min_orders' => 'integer',
+        'auto_assign' => 'boolean',
     ];
 
     /**

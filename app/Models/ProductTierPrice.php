@@ -12,6 +12,7 @@ class ProductTierPrice extends Model
         'variant_id',
         'market_id',
         'pricing_tier_id',
+        'shipping_type', // null = giá thông thường, 'seller' = giá ship by seller, 'tiktok' = giá ship by tiktok
         'base_price',
         'currency',
         'status',
