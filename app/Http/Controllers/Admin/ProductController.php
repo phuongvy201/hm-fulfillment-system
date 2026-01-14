@@ -22,7 +22,7 @@ class ProductController extends Controller
     public function index()
     {
         $products = Product::withCount('variants')
-            ->with(['images' => function($query) {
+            ->with(['images' => function ($query) {
                 $query->orderBy('is_primary', 'desc')->orderBy('sort_order')->limit(1);
             }])
             ->latest()
@@ -68,6 +68,8 @@ class ProductController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'sku' => ['nullable', 'string', 'max:255', 'unique:products'],
+            'sku_template' => ['nullable', 'string', 'max:255'],
+            'workshop_sku_template' => ['nullable', 'string', 'max:255'],
             'workshop_id' => ['required', 'exists:workshops,id'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'in:active,inactive,draft'],
@@ -79,6 +81,8 @@ class ProductController extends Controller
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']),
             'sku' => $validated['sku'] ?? null,
+            'sku_template' => $validated['sku_template'] ?? null,
+            'workshop_sku_template' => $validated['workshop_sku_template'] ?? null,
             'workshop_id' => $validated['workshop_id'],
             'description' => $validated['description'] ?? null,
             'status' => $validated['status'],
@@ -103,80 +107,81 @@ class ProductController extends Controller
             'printingPrices.market',
             'images',
         ]);
-        
+
         // Paginate variants for better performance when there are many variants
         $perPage = $request->get('per_page', 50); // Default 50 variants per page
-        
+
         // Build query with filters
         $variantsQuery = $product->variants()
             ->with([
-                'attributes', 
-            'tierPrices.pricingTier',
-            'tierPrices.market',
+                'attributes',
+                'tierPrices.pricingTier',
+                'tierPrices.market',
                 'userCustomPrices.user',
                 'userCustomPrices.market',
-                'workshopPrices.workshop.market'
+                'workshopPrices.workshop.market',
+                'workshopSkus.workshop'
             ]);
-        
+
         // Filter by status
         if ($request->has('status') && $request->status !== '') {
             $variantsQuery->where('status', $request->status);
         }
-        
+
         // Filter by search (SKU or display name)
         if ($request->has('search') && !empty($request->search)) {
             $search = $request->search;
-            $variantsQuery->where(function($query) use ($search) {
+            $variantsQuery->where(function ($query) use ($search) {
                 $query->where('sku', 'like', "%{$search}%")
-                    ->orWhereHas('attributes', function($q) use ($search) {
+                    ->orWhereHas('attributes', function ($q) use ($search) {
                         $q->where('attribute_value', 'like', "%{$search}%");
                     });
             });
         }
-        
+
         // Filter by attribute
         if ($request->has('filter_attribute_name') && $request->has('filter_attribute_value')) {
             $attrName = $request->filter_attribute_name;
             $attrValue = $request->filter_attribute_value;
             if (!empty($attrName) && !empty($attrValue)) {
-                $variantsQuery->whereHas('attributes', function($q) use ($attrName, $attrValue) {
+                $variantsQuery->whereHas('attributes', function ($q) use ($attrName, $attrValue) {
                     $q->where('attribute_name', $attrName)
-                      ->where('attribute_value', $attrValue);
+                        ->where('attribute_value', $attrValue);
                 });
             }
         }
-        
+
         $variants = $variantsQuery->orderBy('id', 'desc')->paginate($perPage);
-        
+
         // Load all variants (without pagination) only for attributes grouping (needed for bulk operations)
         // This is lighter than loading all tierPrices
         $allVariantsForAttributes = $product->variants()
             ->with('attributes')
             ->get();
-        
+
         $workshops = Workshop::where('status', 'active')->get();
         $tiers = PricingTier::where('status', 'active')->orderBy('priority')->get();
-        
+
         // Get markets for bulk pricing modal
         $markets = Market::where('status', 'active')->get();
-        
+
         // Group attributes by attribute_name for smart filtering (use all variants for accurate filtering)
         $attributesByGroup = [];
         foreach ($allVariantsForAttributes as $variant) {
             foreach ($variant->attributes as $attr) {
                 $attrName = $attr->attribute_name;
                 $attrValue = $attr->attribute_value;
-                
+
                 if (!isset($attributesByGroup[$attrName])) {
                     $attributesByGroup[$attrName] = [];
                 }
-                
+
                 if (!in_array($attrValue, $attributesByGroup[$attrName])) {
                     $attributesByGroup[$attrName][] = $attrValue;
                 }
             }
         }
-        
+
         // Sort attribute values for each group
         foreach ($attributesByGroup as $key => $values) {
             sort($attributesByGroup[$key]);
@@ -203,6 +208,8 @@ class ProductController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'sku' => ['nullable', 'string', 'max:255', Rule::unique('products')->ignore($product->id)],
+            'sku_template' => ['nullable', 'string', 'max:255'],
+            'workshop_sku_template' => ['nullable', 'string', 'max:255'],
             'workshop_id' => ['required', 'exists:workshops,id'],
             'description' => ['nullable', 'string'],
             'status' => ['required', 'in:active,inactive,draft'],
@@ -214,6 +221,8 @@ class ProductController extends Controller
             'name' => $validated['name'],
             'slug' => Str::slug($validated['name']),
             'sku' => $validated['sku'] ?? null,
+            'sku_template' => $validated['sku_template'] ?? null,
+            'workshop_sku_template' => $validated['workshop_sku_template'] ?? null,
             'workshop_id' => $validated['workshop_id'],
             'description' => $validated['description'] ?? null,
             'status' => $validated['status'],
@@ -234,7 +243,7 @@ class ProductController extends Controller
     public function destroy($id, Request $request)
     {
         $forceDelete = $request->input('force', false);
-        
+
         if ($forceDelete) {
             // Hard delete - xóa cứng khỏi database (có thể là trashed product)
             $product = Product::withTrashed()->findOrFail($id);
@@ -263,10 +272,10 @@ class ProductController extends Controller
 
         foreach ($images as $image) {
             $sortOrder++;
-            
+
             // Store image in storage/app/public/products/{product_id}/
             $path = $image->store("products/{$product->id}", 'public');
-            
+
             ProductImage::create([
                 'product_id' => $product->id,
                 'image_path' => $path,

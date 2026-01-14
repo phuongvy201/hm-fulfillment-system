@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard') 
 
 @section('title', 'Manage Workshop SKUs - ' . config('app.name', 'Laravel'))
 

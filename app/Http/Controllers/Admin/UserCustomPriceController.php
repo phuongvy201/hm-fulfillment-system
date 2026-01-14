@@ -20,8 +20,17 @@ class UserCustomPriceController extends Controller
     {
         $variant->load('attributes');
 
-        // Get all active markets
-        $markets = Market::where('status', 'active')->get();
+        // Get market from product's workshop
+        $product->load('workshop.market');
+        $market = $product->workshop->market ?? null;
+
+        // Chỉ lấy market của workshop (nếu có), nếu không có workshop thì lấy tất cả
+        if ($market) {
+            $markets = collect([$market]);
+        } else {
+            // Fallback: nếu không có workshop, lấy tất cả markets
+            $markets = Market::where('status', 'active')->get();
+        }
 
         // Get existing custom prices for this variant and user
         $existingPrices = UserCustomPrice::where('variant_id', $variant->id)
@@ -46,6 +55,7 @@ class UserCustomPriceController extends Controller
             $request->validate([
                 "prices.{$key}.market_id" => ['required', 'exists:markets,id'],
                 "prices.{$key}.price" => ['nullable', 'numeric', 'min:0'],
+                "prices.{$key}.additional_item_price" => ['nullable', 'numeric', 'min:0'],
                 "prices.{$key}.shipping_type" => ['nullable', 'in:seller,tiktok'],
                 "prices.{$key}.status" => ['required', 'in:active,inactive'],
                 "prices.{$key}.valid_from" => ['nullable', 'date'],
@@ -93,6 +103,7 @@ class UserCustomPriceController extends Controller
                     ],
                     [
                         'price' => $priceData['price'],
+                        'additional_item_price' => $priceData['additional_item_price'] ?? null,
                         'currency' => $market->currency,
                         'status' => $priceData['status'] ?? 'active',
                         'valid_from' => !empty($priceData['valid_from']) ? $priceData['valid_from'] : null,
@@ -136,8 +147,17 @@ class UserCustomPriceController extends Controller
             $query->where('slug', '!=', 'super-admin');
         })->orWhereNull('role_id')->get();
 
-        // Get all active markets
-        $markets = Market::where('status', 'active')->get();
+        // Get market from product's workshop
+        $product->load('workshop.market');
+        $market = $product->workshop->market ?? null;
+
+        // Chỉ lấy market của workshop (nếu có), nếu không có workshop thì lấy tất cả
+        if ($market) {
+            $markets = collect([$market]);
+        } else {
+            // Fallback: nếu không có workshop, lấy tất cả markets
+            $markets = Market::where('status', 'active')->get();
+        }
 
         // Group attributes by attribute_name for smart filtering
         $attributesByGroup = [];
@@ -188,6 +208,7 @@ class UserCustomPriceController extends Controller
             $request->validate([
                 "prices.{$key}.market_id" => ['required', 'exists:markets,id'],
                 "prices.{$key}.price" => ['nullable', 'numeric', 'min:0'],
+                "prices.{$key}.additional_item_price" => ['nullable', 'numeric', 'min:0'],
                 "prices.{$key}.shipping_type" => ['nullable', 'in:seller,tiktok'],
                 "prices.{$key}.status" => ['required', 'in:active,inactive'],
                 "prices.{$key}.valid_from" => ['nullable', 'date'],
@@ -305,6 +326,7 @@ class UserCustomPriceController extends Controller
                             ],
                             [
                                 'price' => $priceData['price'],
+                                'additional_item_price' => $priceData['additional_item_price'] ?? null,
                                 'currency' => $market->currency,
                                 'status' => $priceData['status'] ?? 'active',
                                 'valid_from' => !empty($priceData['valid_from']) ? $priceData['valid_from'] : null,

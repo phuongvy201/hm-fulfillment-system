@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard') 
 
 @section('title', 'Create User - ' . config('app.name', 'Laravel'))
 

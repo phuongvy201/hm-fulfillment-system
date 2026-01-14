@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard')
 
 @section('title', 'Deleted Products - ' . config('app.name', 'Laravel'))
 
@@ -12,10 +12,16 @@
 @endsection
 
 @section('content')
-@if(session('success'))
-    <div class="mb-6 p-4 rounded-lg" style="background-color: #D1FAE5; border: 1px solid #10B981;">
-        <p class="text-sm font-medium" style="color: #065F46;">{{ session('success') }}</p>
-    </div>
+@if(session()->has('success'))
+    @php
+        $successMessages = session('success');
+        $successMessages = is_array($successMessages) ? array_unique($successMessages) : [$successMessages];
+    @endphp
+    @foreach($successMessages as $msg)
+        <div class="mb-6 p-4 rounded-lg" style="background-color: #D1FAE5; border: 1px solid #10B981;">
+            <p class="text-sm font-medium" style="color: #065F46;">{{ $msg }}</p>
+        </div>
+    @endforeach
 @endif
 
 <div class="space-y-6">

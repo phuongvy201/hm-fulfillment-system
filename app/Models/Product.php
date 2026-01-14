@@ -15,6 +15,8 @@ class Product extends Model
         'name',
         'slug',
         'sku',
+        'sku_template',
+        'workshop_sku_template',
         'description',
         'status',
         'workshop_id',

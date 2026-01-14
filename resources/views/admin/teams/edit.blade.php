@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard')
 
 @section('title', 'Edit Team - ' . config('app.name', 'Laravel'))
 

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard') 
 
 @section('title', 'Edit Product - ' . config('app.name', 'Laravel'))
 
@@ -24,11 +24,12 @@
             </div>
         @endif
 
-        <form method="POST" action="{{ route('admin.products.update', $product) }}" enctype="multipart/form-data">
+        <form id="productEditForm" method="POST" action="{{ route('admin.products.update', $product) }}" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
             <div class="space-y-6">
+                <div id="formStatus" class="hidden mb-4 px-4 py-3 rounded-lg text-sm font-semibold"></div>
                 <div>
                     <label for="name" class="block text-sm font-semibold mb-2" style="color: #111827;">Product Name</label>
                     <input 
@@ -57,6 +58,49 @@
                         onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
                         onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
                     >
+                </div>
+
+                <div>
+                    <label for="sku_template" class="block text-sm font-semibold mb-2" style="color: #111827;">
+                        Template SKU nội bộ <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="sku_template" 
+                        name="sku_template" 
+                        value="{{ old('sku_template', $product->sku_template) }}"
+                        placeholder="e.g., T004-{COLOR_CODE}-{SIZE}-US"
+                        required
+                        class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all font-mono text-sm"
+                        style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                        onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
+                        onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
+                    >
+                    <p class="mt-1 text-xs text-gray-500">
+                        Sử dụng các biến: <code>{COLOR_CODE}</code>, <code>{COLOR}</code>, <code>{SIZE}</code>, <code>{MARKET_CODE}</code>, <code>{WORKSHOP_CODE}</code><br>
+                        Ví dụ: <code>T004-{COLOR_CODE}-{SIZE}-US</code>
+                    </p>
+                </div>
+
+                <div>
+                    <label for="workshop_sku_template" class="block text-sm font-semibold mb-2" style="color: #111827;">
+                        Template Workshop SKU
+                    </label>
+                    <input 
+                        type="text" 
+                        id="workshop_sku_template" 
+                        name="workshop_sku_template" 
+                        value="{{ old('workshop_sku_template', $product->workshop_sku_template) }}"
+                        placeholder="e.g., COMFORT {SIZE}/ {COLOR_CODE}"
+                        class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all font-mono text-sm"
+                        style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                        onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
+                        onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
+                    >
+                    <p class="mt-1 text-xs text-gray-500">
+                        Sử dụng các biến: <code>{WORKSHOP_SKU_CODE}</code>, <code>{WORKSHOP_CODE}</code>, <code>{COLOR_CODE}</code>, <code>{COLOR}</code>, <code>{SIZE}</code><br>
+                        Ví dụ: <code>COMFORT {SIZE}/ {COLOR_CODE}</code> hoặc <code>{WORKSHOP_SKU_CODE}-{COLOR_CODE}-{SIZE}</code>
+                    </p>
                 </div>
 
                 <div>
@@ -155,6 +199,7 @@
                 <div class="flex items-center gap-4 pt-4">
                     <button 
                         type="submit"
+                        data-submit
                         class="px-6 py-3 rounded-lg font-semibold text-white transition-all"
                         style="background-color: #2563EB;"
                         onmouseover="this.style.backgroundColor='#1D4ED8';"
@@ -196,6 +241,66 @@
             };
             reader.readAsDataURL(file);
         });
+    });
+
+    // AJAX submit to avoid wrong method redirects
+    document.getElementById('productEditForm')?.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const form = e.currentTarget;
+        const submitBtn = form.querySelector('[data-submit]');
+        const statusBox = document.getElementById('formStatus');
+
+        const showStatus = (msg, ok = true) => {
+            if (!statusBox) return;
+            statusBox.textContent = msg;
+            statusBox.classList.remove('hidden');
+            statusBox.style.backgroundColor = ok ? '#ECFDF3' : '#FEF2F2';
+            statusBox.style.color = ok ? '#065F46' : '#991B1B';
+            statusBox.style.border = ok ? '1px solid #10B981' : '1px solid #EF4444';
+        };
+
+        const originalText = submitBtn ? submitBtn.textContent : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Updating...';
+            submitBtn.style.opacity = '0.75';
+        }
+
+        try {
+            const formData = new FormData(form);
+            formData.set('_method', 'PUT'); // ensure spoof
+
+            const res = await fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+            });
+
+            if (res.redirected) {
+                window.location.href = res.url;
+                return;
+            }
+
+            if (res.ok) {
+                showStatus('Saved successfully. Reloading...', true);
+                setTimeout(() => window.location.reload(), 500);
+            } else {
+                const text = await res.text();
+                showStatus('Save failed. Please try again.', false);
+                console.error('Update failed', text);
+            }
+        } catch (err) {
+            showStatus('Network error. Please try again.', false);
+            console.error(err);
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+                submitBtn.style.opacity = '1';
+            }
+        }
     });
 </script>
 @endpush

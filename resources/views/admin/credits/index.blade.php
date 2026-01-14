@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard') 
 
 @section('title', 'Credit Management - ' . config('app.name', 'Laravel'))
 
@@ -128,6 +128,9 @@
 @php
     $activeMenu = 'credits';
 @endphp
+
+
+
 
 
 

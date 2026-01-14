@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard') 
 
 @php
     use Illuminate\Support\Facades\Storage;

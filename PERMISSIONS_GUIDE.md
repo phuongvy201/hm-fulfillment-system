@@ -254,3 +254,9 @@ $role->permissions()->sync($permissions->pluck('id'));
 
 
 
+
+
+
+
+
+

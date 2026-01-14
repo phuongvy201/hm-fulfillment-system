@@ -14,6 +14,7 @@ class ProductTierPrice extends Model
         'pricing_tier_id',
         'shipping_type', // null = giá thông thường, 'seller' = giá ship by seller, 'tiktok' = giá ship by tiktok
         'base_price',
+        'additional_item_price', // Giá cho item thứ 2 trở đi (đã trừ phí label)
         'currency',
         'status',
         'valid_from',
@@ -22,6 +23,7 @@ class ProductTierPrice extends Model
 
     protected $casts = [
         'base_price' => 'decimal:2',
+        'additional_item_price' => 'decimal:2',
         'valid_from' => 'datetime',
         'valid_to' => 'datetime',
     ];

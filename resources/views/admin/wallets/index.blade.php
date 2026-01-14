@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard') 
 
 @section('title', 'Wallet Management - ' . config('app.name', 'Laravel'))
 
@@ -125,6 +125,9 @@
 @php
     $activeMenu = 'wallets';
 @endphp
+
+
+
 
 
 

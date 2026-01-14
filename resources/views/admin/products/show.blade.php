@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard')
 
 @php
     use Illuminate\Support\Facades\Storage;
@@ -94,83 +94,86 @@
     </div>
 
     <!-- Variants Section -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-100">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-4">
-                    <h3 class="text-lg font-semibold text-gray-900">
-                        Product Variants 
-                        <span class="text-sm font-normal text-gray-600">
-                            ({{ $variants->total() }} total{{ $variants->hasPages() ? ' - Showing ' . $variants->firstItem() . '-' . $variants->lastItem() : '' }})
-                        </span>
-                    </h3>
-                    @if($variants->hasPages())
-            <div class="flex items-center gap-2">
-                        <label class="text-xs text-gray-600">Per page:</label>
-                        <select onchange="updateUrlParam('per_page', this.value)" class="px-2 py-1 text-xs border rounded" style="border-color: #D1D5DB;">
-                            <option value="25" {{ request('per_page', 50) == 25 ? 'selected' : '' }}>25</option>
-                            <option value="50" {{ request('per_page', 50) == 50 ? 'selected' : '' }}>50</option>
-                            <option value="100" {{ request('per_page', 50) == 100 ? 'selected' : '' }}>100</option>
-                            <option value="200" {{ request('per_page', 50) == 200 ? 'selected' : '' }}>200</option>
-                        </select>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="px-6 py-5 border-b border-gray-200">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">SKU Management</h2>
+                    <p class="text-sm text-gray-500 mt-1">Oversee product variants, streamline pricing, and monitor stock levels.</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    @if($variants->total() > 0)
+                    <!-- Bulk Actions Dropdown -->
+                    <div class="relative" id="bulkActionsDropdown">
+                        <button type="button" onclick="toggleBulkActionsDropdown()" class="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold text-sm">
+                            <span class="material-symbols-outlined text-lg">layers</span>
+                            <span>Bulk Actions</span>
+                            <span class="material-symbols-outlined text-base">expand_more</span>
+                        </button>
+                        <div id="bulkActionsMenu" class="hidden absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 min-w-[220px]">
+                            <a href="{{ route('admin.products.variants.bulk-prices.create', $product) }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                <span class="material-symbols-outlined text-base">payments</span>
+                                Bulk Set Prices by Tier
+                            </a>
+                            <a href="{{ route('admin.products.variants.bulk-printing-prices.create', $product) }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                <span class="material-symbols-outlined text-base">print</span>
+                                Bulk Set Printing Prices
+                            </a>
+                            <a href="{{ route('admin.products.variants.user-prices.bulk-create', $product) }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                <span class="material-symbols-outlined text-base">person</span>
+                                Bulk Set User Prices
+                            </a>
+                            @if($product->workshop)
+                            <a href="{{ route('admin.products.workshop-prices.bulk-create', $product) }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                <span class="material-symbols-outlined text-base">factory</span>
+                                Bulk Set Workshop Prices
+                            </a>
+                            @endif
+                            <div class="border-t border-gray-200 my-1"></div>
+                            <a href="{{ route('admin.products.variants.create', $product) }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                <span class="material-symbols-outlined text-base">add</span>
+                                Add Single Variant
+                            </a>
+                        </div>
                     </div>
                     @endif
+                    <!-- Primary Action Button -->
+                    <a href="{{ route('admin.products.variants.bulk-create', $product) }}" class="flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all font-bold text-sm shadow-sm shadow-orange-500/20">
+                        <span class="material-symbols-outlined text-lg">add</span>
+                        ADD VARIANTS
+                    </a>
                 </div>
-            </div>
-            <div class="flex items-center gap-2 flex-wrap">
-                @if($variants->total() > 0)
-                <a href="{{ route('admin.products.variants.bulk-prices.create', $product) }}" class="px-4 py-2 rounded-lg text-sm font-medium text-white transition-all shadow-sm" style="background-color: #10B981;" onmouseover="this.style.backgroundColor='#059669';" onmouseout="this.style.backgroundColor='#10B981';">
-                    ⚡ Bulk Set Prices by Tier
-                </a>
-                <a href="{{ route('admin.products.variants.bulk-printing-prices.create', $product) }}" class="px-4 py-2 rounded-lg text-sm font-medium text-white transition-all shadow-sm" style="background-color: #F59E0B;" onmouseover="this.style.backgroundColor='#D97706';" onmouseout="this.style.backgroundColor='#F59E0B';">
-                    🖨️ Bulk Set Printing Prices
-                </a>
-                <a href="{{ route('admin.products.variants.user-prices.bulk-create', $product) }}" class="px-4 py-2 rounded-lg text-sm font-medium text-white transition-all shadow-sm" style="background-color: #8B5CF6;" onmouseover="this.style.backgroundColor='#7C3AED';" onmouseout="this.style.backgroundColor='#8B5CF6';">
-                    👤 Bulk Set User Prices
-                </a>
-                @if($product->workshop)
-                <a href="{{ route('admin.products.workshop-prices.bulk-create', $product) }}" class="px-4 py-2 rounded-lg text-sm font-medium text-white transition-all shadow-sm" style="background-color: #EC4899;" onmouseover="this.style.backgroundColor='#DB2777';" onmouseout="this.style.backgroundColor='#EC4899';">
-                    🏭 Bulk Set Workshop Prices
-                </a>
-                @endif
-                @endif
-                <a href="{{ route('admin.products.variants.bulk-create', $product) }}" class="px-4 py-2 rounded-lg text-sm font-medium text-white transition-all shadow-sm" style="background-color: #2563EB;" onmouseover="this.style.backgroundColor='#1D4ED8';" onmouseout="this.style.backgroundColor='#2563EB';">
-                    + Bulk Add Variants
-                </a>
-                <a href="{{ route('admin.products.variants.create', $product) }}" class="px-4 py-2 rounded-lg text-sm font-medium transition-all border" style="color: #2563EB; border-color: #DBEAFE; background-color: #EFF6FF;" onmouseover="this.style.backgroundColor='#DBEAFE';" onmouseout="this.style.backgroundColor='#EFF6FF';">
-                    + Add Single Variant
-                </a>
             </div>
         </div>
         
         <!-- Filter Section -->
-        <div class="px-6 py-4 border-b border-gray-100 bg-gray-50">
-            <form method="GET" action="{{ route('admin.products.show', $product) }}" id="filterForm" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="px-6 py-4 border-b border-gray-200 bg-white">
+            <form method="GET" action="{{ route('admin.products.show', $product) }}" id="filterForm">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <!-- Search -->
                     <div>
-                        <label class="block text-xs font-medium mb-1 text-gray-700">Tìm kiếm (SKU/Attribute):</label>
-                        <input 
-                            type="text" 
-                            name="search" 
-                            value="{{ request('search') }}"
-                            placeholder="Nhập SKU hoặc attribute..."
-                            class="w-full px-3 py-2 text-sm border rounded-lg"
-                            style="border-color: #D1D5DB;"
-                            onchange="document.getElementById('filterForm').submit()"
-                        >
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">SEARCH PRODUCT OR SKU</label>
+                        <div class="relative">
+                            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
+                            <input 
+                                type="text" 
+                                name="search" 
+                                value="{{ request('search') }}"
+                                placeholder="Enter SKU, variant name..."
+                                class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm"
+                            >
+                        </div>
                     </div>
                     
                     <!-- Status Filter -->
                     <div>
-                        <label class="block text-xs font-medium mb-1 text-gray-700">Status:</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">STATUS</label>
                         <select 
                             name="status" 
-                            class="w-full px-3 py-2 text-sm border rounded-lg"
-                            style="border-color: #D1D5DB;"
+                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm appearance-none"
                             onchange="document.getElementById('filterForm').submit()"
                         >
-                            <option value="">Tất cả</option>
+                            <option value="">All Statuses</option>
                             <option value="active" {{ request('status') === 'active' ? 'selected' : '' }}>Active</option>
                             <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
                         </select>
@@ -179,15 +182,14 @@
                     <!-- Attribute Filter -->
                     @if(!empty($attributesByGroup))
                     <div>
-                        <label class="block text-xs font-medium mb-1 text-gray-700">Filter by Attribute:</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">ATTRIBUTE</label>
                         <select 
                             name="filter_attribute_name" 
                             id="filter_attribute_name"
-                            class="w-full px-3 py-2 text-sm border rounded-lg"
-                            style="border-color: #D1D5DB;"
+                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm appearance-none"
                             onchange="updateAttributeValueOptions()"
                         >
-                            <option value="">Chọn attribute...</option>
+                            <option value="">Select Attribute</option>
                             @foreach($attributesByGroup as $attrName => $attrValues)
                                 <option value="{{ $attrName }}" {{ request('filter_attribute_name') === $attrName ? 'selected' : '' }}>{{ $attrName }}</option>
                             @endforeach
@@ -195,15 +197,14 @@
                     </div>
                     
                     <div>
-                        <label class="block text-xs font-medium mb-1 text-gray-700">Attribute Value:</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">ATTRIBUTE VALUE</label>
                         <select 
                             name="filter_attribute_value" 
                             id="filter_attribute_value"
-                            class="w-full px-3 py-2 text-sm border rounded-lg"
-                            style="border-color: #D1D5DB;"
+                            class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-sm appearance-none"
                             onchange="document.getElementById('filterForm').submit()"
                         >
-                            <option value="">Chọn value...</option>
+                            <option value="">Select Value</option>
                             @if(request('filter_attribute_name') && isset($attributesByGroup[request('filter_attribute_name')]))
                                 @foreach($attributesByGroup[request('filter_attribute_name')] as $attrValue)
                                     <option value="{{ $attrValue }}" {{ request('filter_attribute_value') === $attrValue ? 'selected' : '' }}>{{ $attrValue }}</option>
@@ -219,12 +220,23 @@
                     <input type="hidden" name="per_page" value="{{ request('per_page') }}">
                 @endif
                 
-                <!-- Clear Filters Button -->
+                <!-- Apply Filters Button -->
                 @if(request('search') || request('status') || request('filter_attribute_name'))
-                <div class="flex items-center gap-2">
-                    <a href="{{ route('admin.products.show', $product) }}{{ request('per_page') ? '?per_page=' . request('per_page') : '' }}" class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-all" style="color: #6B7280; border-color: #D1D5DB; background-color: #FFFFFF;" onmouseover="this.style.backgroundColor='#F3F4F6';" onmouseout="this.style.backgroundColor='#FFFFFF';">
-                        ✗ Xóa bộ lọc
+                <div class="flex items-center justify-end gap-2 mt-4">
+                    <a href="{{ route('admin.products.show', $product) }}{{ request('per_page') ? '?per_page=' . request('per_page') : '' }}" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                        Clear Filters
                     </a>
+                    <button type="submit" class="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-lg transition-all font-semibold text-sm">
+                        <span class="material-symbols-outlined text-base">filter_alt</span>
+                        Apply Filters
+                    </button>
+                </div>
+                @else
+                <div class="flex items-center justify-end gap-2 mt-4">
+                    <button type="submit" class="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-black text-white rounded-lg transition-all font-semibold text-sm">
+                        <span class="material-symbols-outlined text-base">filter_alt</span>
+                        Apply Filters
+                    </button>
                 </div>
                 @endif
             </form>
@@ -232,13 +244,13 @@
         
         <!-- Bulk Actions Bar -->
         @if($variants->total() > 0)
-        <div class="px-6 py-3 border-b border-gray-100 bg-blue-50 flex items-center justify-between">
+        <div class="px-6 py-3 border-b border-gray-200 bg-gray-50 flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input 
                         type="checkbox" 
                         id="selectAllVariants"
-                        class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        class="w-4 h-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500"
                         onchange="toggleSelectAll(this)"
                     >
                     <span class="text-sm font-medium text-gray-700">Chọn tất cả</span>
@@ -251,12 +263,10 @@
                     onclick="bulkDeleteVariants()"
                     id="bulkDeleteBtn"
                     disabled
-                    class="px-4 py-2 rounded-lg text-sm font-medium text-white transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    style="background-color: #DC2626;"
-                    onmouseover="if(!this.disabled) this.style.backgroundColor='#B91C1C';"
-                    onmouseout="if(!this.disabled) this.style.backgroundColor='#DC2626';"
+                    class="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed bg-gray-900 hover:bg-black"
                 >
-                    🗑️ Xóa đã chọn
+                    <span class="material-symbols-outlined text-base">delete</span>
+                    Xóa đã chọn
                 </button>
             </div>
         </div>
@@ -269,202 +279,224 @@
             <input type="hidden" name="variant_ids" id="bulkDeleteVariantIds">
         </form>
         
-        <div class="divide-y divide-gray-100">
-            @forelse($variants as $variant)
-            <div class="p-6 hover:bg-gray-50 transition-colors">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3 flex-1">
-                        <input 
-                            type="checkbox" 
-                            name="variant_checkbox" 
-                            value="{{ $variant->id }}"
-                            class="variant-checkbox w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                            onchange="updateSelectedCount()"
-                        >
-                    <div class="flex-1">
-                        <div class="flex items-center gap-3 mb-2">
-                            <h4 class="text-base font-semibold text-gray-900">{{ $variant->display_name }}</h4>
-                            <span class="px-2 py-1 text-xs font-semibold rounded-full" style="background-color: {{ $variant->status === 'active' ? '#D1FAE5' : '#FEE2E2' }}; color: {{ $variant->status === 'active' ? '#065F46' : '#991B1B' }};">
-                                {{ ucfirst($variant->status) }}
-                            </span>
-                        </div>
-                        <div class="flex items-center gap-4 text-sm text-gray-600">
-                            @if($variant->sku)
-                                <div class="flex items-center gap-1.5">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
-                                    </svg>
-                                    <span><strong>SKU:</strong> {{ $variant->sku }}</span>
-                                </div>
-                            @endif
-                        </div>
-                        @php
-                            $variantPrices = $variant->tierPrices->groupBy('pricing_tier_id');
-                            $variantUserPrices = $variant->userCustomPrices ?? collect();
-                            $productPrintingPrices = $product->printingPrices ?? collect();
-                            $variantWorkshopPrices = $variant->workshopPrices ?? collect();
-                        @endphp
-                        @if($variant->attributes && $variant->attributes->count() > 0)
-                            <div class="flex flex-wrap items-center gap-2 mt-3">
-                                @foreach($variant->attributes as $attr)
-                                    <span class="px-2 py-1 text-xs font-medium rounded" style="background-color: #E0F2FE; color: #0369A1;">
-                                        <strong>{{ $attr->attribute_name }}:</strong> {{ $attr->attribute_value }}
-                                    </span>
-                                @endforeach
-                            </div>
-                        @endif
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200">
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider w-8">
+                            <input 
+                                type="checkbox" 
+                                id="selectAllVariantsTable"
+                                class="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                                onchange="toggleSelectAll(this)"
+                            >
+                        </th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Product Variant</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Attributes</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Pricing ($)</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Workshop Price</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Printing Price</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 bg-white">
+                    @forelse($variants as $variant)
+                    @php
+                        $variantPrices = $variant->tierPrices->groupBy('pricing_tier_id');
+                        $variantUserPrices = $variant->userCustomPrices ?? collect();
+                        $productPrintingPrices = $product->printingPrices ?? collect();
+                        $variantWorkshopPrices = $variant->workshopPrices ?? collect();
+                        $variantPrintingPrices = $variant->printingPrices ?? collect();
+                        $sharedPrintingPrices = $productPrintingPrices->whereNull('variant_id');
+                        $workshopSkus = $variant->workshopSkus ?? collect();
+                        $primaryImage = $product->images->where('is_primary', true)->first() ?? $product->images->first();
                         
-                        <!-- Tier Prices (Standard Prices) -->
-                        @if($variantPrices->count() > 0)
-                            <div class="mt-3">
-                                <div class="text-xs font-semibold text-gray-700 mb-1">💰 Giá tiêu chuẩn:</div>
-                                <div class="flex flex-wrap items-center gap-2">
-                                @foreach($variantPrices as $tierId => $prices)
-                                    @php
-                                        $firstPrice = $prices->first();
-                                        $tier = $firstPrice->pricingTier ?? null;
-                                    @endphp
-                                    @if($tier)
-                                            @php
-                                                $pricesByShipping = $prices->groupBy('shipping_type');
-                                            @endphp
-                                            <div class="flex flex-col gap-1">
-                                                <span class="text-xs font-medium text-gray-600">{{ $tier->name }}:</span>
-                                                <div class="flex flex-wrap gap-1">
-                                                    @foreach($pricesByShipping as $shippingType => $shippingPrices)
-                                                        @php
-                                                            $market = $shippingPrices->first()->market ?? null;
-                                                            $minPrice = $shippingPrices->min('base_price');
-                                                            $maxPrice = $shippingPrices->max('base_price');
-                                                            $shippingLabel = $shippingType === 'seller' ? 'Seller' : ($shippingType === 'tiktok' ? 'TikTok' : 'Standard');
-                                                        @endphp
-                                                        @if($market)
-                                        <span class="px-2 py-1 text-xs font-medium rounded" style="background-color: #DBEAFE; color: #1E40AF;">
-                                                                <strong>{{ $market->code }} ({{ $shippingLabel }}):</strong> 
-                                            {{ $minPrice == $maxPrice ? number_format($minPrice, 2) : number_format($minPrice, 2) . ' - ' . number_format($maxPrice, 2) }}
-                                                                {{ $market->currency }}
-                                                            </span>
-                                                        @endif
-                                                    @endforeach
-                                                </div>
-                                            </div>
-                                        @endif
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endif
-                        
-                        <!-- User Custom Prices -->
-                        @if($variantUserPrices->count() > 0)
-                            <div class="mt-3">
-                                <div class="text-xs font-semibold text-gray-700 mb-1">👤 Giá riêng cho user:</div>
-                                <div class="flex flex-wrap items-center gap-2">
-                                    @foreach($variantUserPrices->groupBy('user_id') as $userId => $userPrices)
-                                        @php
-                                            $user = $userPrices->first()->user ?? null;
-                                            $pricesByShipping = $userPrices->groupBy('shipping_type');
-                                        @endphp
-                                        @if($user)
-                                            <div class="flex flex-col gap-1">
-                                                <span class="text-xs font-medium text-gray-600">{{ $user->name }}:</span>
-                                                <div class="flex flex-wrap gap-1">
-                                                    @foreach($pricesByShipping as $shippingType => $shippingPrices)
-                                                        @php
-                                                            $market = $shippingPrices->first()->market ?? null;
-                                                            $price = $shippingPrices->first()->price ?? null;
-                                                            $shippingLabel = $shippingType === 'seller' ? 'Seller' : ($shippingType === 'tiktok' ? 'TikTok' : 'Standard');
-                                                        @endphp
-                                                        @if($market && $price)
-                                                            <span class="px-2 py-1 text-xs font-medium rounded" style="background-color: #F3E8FF; color: #7C3AED;">
-                                                                <strong>{{ $market->code }} ({{ $shippingLabel }}):</strong> 
-                                                                {{ number_format($price, 2) }} {{ $market->currency }}
-                                                            </span>
-                                                        @endif
-                                                    @endforeach
-                                                </div>
-                                            </div>
-                                        @endif
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endif
-                        
-                        <!-- Workshop Prices -->
-                        @if($product->workshop)
-                            <div class="mt-3">
-                                <div class="text-xs font-semibold text-gray-700 mb-1">🏭 Giá workshop:</div>
-                                @if($variantWorkshopPrices->count() > 0)
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        @foreach($variantWorkshopPrices->groupBy('workshop_id') as $workshopId => $workshopPrices)
-                                            @php
-                                                $workshop = $workshopPrices->first()->workshop ?? null;
-                                                $pricesByShipping = $workshopPrices->groupBy('shipping_type');
-                                            @endphp
-                                            @if($workshop)
-                                                <div class="flex flex-col gap-1">
-                                                    <span class="text-xs font-medium text-gray-600">
-                                                        <strong>{{ $workshop->code }}</strong>
-                                                        @if($workshop->market)
-                                                            ({{ $workshop->market->code }})
-                                                        @endif
-                                                        :
-                                                    </span>
-                                                    <div class="flex flex-wrap gap-1">
-                                                        @foreach($pricesByShipping as $shippingType => $shippingPrices)
-                                                            @php
-                                                                $wp = $shippingPrices->first();
-                                                                $shippingLabel = $shippingType === 'seller' ? 'Seller' : ($shippingType === 'tiktok' ? 'TikTok' : 'Standard');
-                                                            @endphp
-                                                            <span class="px-2 py-1 text-xs font-medium rounded" style="background-color: #FCE7F3; color: #BE185D;">
-                                                                <strong>{{ $shippingLabel }}:</strong> 
-                                                                {{ number_format($wp->base_price, 2) }} {{ $wp->currency }}
+                        // Find Wood tier
+                        $woodTier = null;
+                        foreach($variantPrices as $tierId => $prices) {
+                            $firstPrice = $prices->first();
+                            $tier = $firstPrice->pricingTier ?? null;
+                            if($tier && strtolower($tier->name) === 'wood') {
+                                $woodTier = $tier;
+                                break;
+                            }
+                        }
+                    @endphp
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-5 align-top">
+                            <input 
+                                type="checkbox" 
+                                name="variant_checkbox" 
+                                value="{{ $variant->id }}"
+                                class="variant-checkbox rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                                onchange="updateSelectedCount()"
+                            >
+                        </td>
+                        <td class="px-6 py-5 align-top">
+                            <div class="flex gap-4">
+                                @if($primaryImage)
+                                    <div class="h-14 w-14 rounded-lg bg-gray-100 overflow-hidden shrink-0 border border-gray-200">
+                                        <img alt="Product Image" class="h-full w-full object-cover" src="{{ Storage::url($primaryImage->image_path) }}">
+                                    </div>
+                                @else
+                                    <div class="h-14 w-14 rounded-lg bg-gray-100 shrink-0 border border-gray-200 flex items-center justify-center">
+                                        <span class="material-symbols-outlined text-gray-400">inventory_2</span>
+                                    </div>
+                                @endif
+                                <div class="flex flex-col gap-1">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-bold text-gray-900">{{ $variant->display_name }}</span>
+                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold {{ $variant->status === 'active' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200' }}">
+                                            {{ strtoupper($variant->status) }}
                                         </span>
-                                                        @endforeach
+                                    </div>
+                                    <div class="flex flex-col">
+                                        @if($variant->sku)
+                                            <span class="text-xs font-mono text-gray-400 uppercase">{{ $variant->sku }}</span>
+                                        @endif
+                                        @if($workshopSkus->count() > 0)
+                                            @foreach($workshopSkus->take(1) as $wsSku)
+                                                <span class="text-[10px] text-gray-400">
+                                                    @if($wsSku->workshop)
+                                                        {{ $wsSku->workshop->name }}: {{ $wsSku->sku }}
+                                                    @else
+                                                        {{ $wsSku->sku }}
+                                                    @endif
+                                                </span>
+                                            @endforeach
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-5 align-top">
+                            @if($variant->attributes && $variant->attributes->count() > 0)
+                                <div class="flex flex-wrap gap-2">
+                                    @foreach($variant->attributes as $attr)
+                                        <div class="flex items-center px-2 py-1 rounded bg-blue-50 border border-blue-100">
+                                            <span class="text-[10px] font-bold text-blue-700 mr-1">{{ $attr->attribute_name }}:</span>
+                                            <span class="text-[10px] text-blue-600">{{ $attr->attribute_value }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <span class="text-sm text-gray-400">-</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-5 align-top">
+                            @if($variantPrices->count() > 0)
+                                @php
+                                    // Get first tier prices for display (usually default tier)
+                                    $firstTierPrices = $variantPrices->first();
+                                    $firstPrice = $firstTierPrices->first();
+                                    $tier = $firstPrice->pricingTier ?? null;
+                                    $pricesByShipping = $firstTierPrices->groupBy('shipping_type');
+                                    $pricesByMarket = $firstTierPrices->groupBy('market_id');
+                                    
+                                    // Organize by market and shipping type
+                                    $pricingData = [];
+                                    foreach($pricesByMarket as $marketId => $marketPrices) {
+                                        $market = $marketPrices->first()->market ?? null;
+                                        if($market) {
+                                            $pricingData[$market->code] = [
+                                                'market' => $market,
+                                                'seller' => $marketPrices->where('shipping_type', 'seller')->first(),
+                                                'tiktok' => $marketPrices->where('shipping_type', 'tiktok')->first(),
+                                            ];
+                                        }
+                                    }
+                                @endphp
+                                @if(count($pricingData) > 0)
+                                    <div class="grid grid-cols-2 gap-x-8 gap-y-3">
+                                        @foreach($pricingData as $marketCode => $data)
+                                            @if($data['seller'])
+                                                <div class="flex flex-col gap-1">
+                                                    <span class="text-[10px] font-bold text-gray-400 uppercase">{{ $data['market']->code }} (Seller)</span>
+                                                    <div class="flex items-baseline gap-2">
+                                                        <span class="text-xs text-blue-600 font-semibold">Item 1: <span class="text-gray-900 font-bold">{{ number_format($data['seller']->base_price, 2) }}</span></span>
+                                                        @if($data['seller']->additional_item_price)
+                                                            <span class="text-xs text-blue-600 font-semibold">Item 2+: <span class="text-gray-900 font-bold">{{ number_format($data['seller']->additional_item_price, 2) }}</span></span>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            @endif
+                                            @if($data['tiktok'])
+                                                <div class="flex flex-col gap-1">
+                                                    <span class="text-[10px] font-bold text-gray-400 uppercase">{{ $data['market']->code }} (TikTok)</span>
+                                                    <div class="flex items-baseline gap-2">
+                                                        <span class="text-xs text-blue-600 font-semibold">Item 1: <span class="text-gray-900 font-bold">{{ number_format($data['tiktok']->base_price, 2) }}</span></span>
+                                                        @if($data['tiktok']->additional_item_price)
+                                                            <span class="text-xs text-blue-600 font-semibold">Item 2+: <span class="text-gray-900 font-bold">{{ number_format($data['tiktok']->additional_item_price, 2) }}</span></span>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             @endif
                                         @endforeach
                                     </div>
                                 @else
-                                    <div class="text-xs text-gray-500 italic">
-                                        Chưa có giá workshop được thiết lập cho variant này.
+                                    <span class="text-xs text-gray-400">Chưa có giá</span>
+                                @endif
+                            @else
+                                <span class="text-xs text-gray-400">Chưa có giá</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-5 align-top">
+                            @if($product->workshop)
+                                @if($variantWorkshopPrices->count() > 0)
+                                    <div class="space-y-2">
+                                        @foreach($variantWorkshopPrices->groupBy('workshop_id') as $workshopId => $workshopPrices)
+                                            @php
+                                                $workshop = $workshopPrices->first()->workshop ?? null;
+                                                $pricesByShipping = $workshopPrices->groupBy('shipping_type');
+                                            @endphp
+                                            @if($workshop)
+                                                <div class="text-xs font-medium text-gray-600">
+                                                    <strong>{{ $workshop->code }}</strong>
+                                                    @if($workshop->market)
+                                                        ({{ $workshop->market->code }})
+                                                    @endif
+                                                </div>
+                                                <div class="flex flex-wrap gap-1 ml-2">
+                                                    @foreach($pricesByShipping as $shippingType => $shippingPrices)
+                                                        @php
+                                                            $wp = $shippingPrices->first();
+                                                            $shippingLabel = $shippingType === 'seller' ? 'Seller' : ($shippingType === 'tiktok' ? 'TikTok' : 'Standard');
+                                                        @endphp
+                                                        <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-pink-50 text-pink-700 border border-pink-100">
+                                                            {{ $shippingLabel }}: {{ number_format($wp->base_price, 2) }} {{ $wp->currency }}
+                                                        </span>
+                                                    @endforeach
+                                                </div>
+                                            @endif
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <div class="text-xs text-gray-500">
+                                        Chưa có giá
                                         <a href="{{ route('admin.products.workshop-prices.create', [$product, $variant]) }}" class="text-pink-600 hover:text-pink-700 underline ml-1">
-                                            Thiết lập giá
+                                            Thiết lập
                                         </a>
                                     </div>
                                 @endif
-                            </div>
-                        @endif
-                        
-                        <!-- Printing Prices Info (from product level, shared for all variants) -->
-                        @php
-                            $variantPrintingPrices = $variant->printingPrices ?? collect();
-                            $sharedPrintingPrices = $productPrintingPrices->whereNull('variant_id');
-                        @endphp
-                        @if($sharedPrintingPrices->count() > 0 || $variantPrintingPrices->count() > 0)
-                            <div class="mt-3">
-                                <div class="text-xs font-semibold text-gray-700 mb-1">🖨️ Giá in thêm:</div>
-                                <div class="flex flex-wrap items-center gap-2">
+                            @else
+                                <span class="text-xs text-gray-400">-</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-5 align-top">
+                            @if($sharedPrintingPrices->count() > 0 || $variantPrintingPrices->count() > 0)
+                                <div class="space-y-1">
                                     @if($sharedPrintingPrices->count() > 0)
                                         @foreach($sharedPrintingPrices->groupBy('market_id') as $marketId => $printingPrices)
                                             @php
                                                 $market = $printingPrices->first()->market ?? null;
                                             @endphp
                                             @if($market)
-                                                <div class="px-2 py-1 text-xs font-medium rounded" style="background-color: #FEF3C7; color: #92400E;">
-                                                    <strong>{{ $market->code }} (Chung):</strong>
-                                                    @php
-                                                        $additionalPrice = $printingPrices->where('sides', 2)->first();
-                                                    @endphp
-                                                    @if($additionalPrice)
-                                                        {{ number_format($additionalPrice->price ?? 0, 2) }} {{ $market->currency }}/mặt thêm
-                                                    @else
-                                                        @foreach($printingPrices->sortBy('sides') as $pp)
-                                                            {{ $pp->sides }} mặt: {{ number_format($pp->price ?? 0, 2) }}{{ !$loop->last ? ', ' : '' }}
-                                                        @endforeach
-                                                        {{ $market->currency }}
-                                                    @endif
-                                                </div>
+                                                @php
+                                                    $additionalPrice = $printingPrices->where('sides', 2)->first();
+                                                @endphp
+                                                <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-yellow-50 text-yellow-700 border border-yellow-100">
+                                                    {{ $market->code }} (Chung): {{ $additionalPrice ? number_format($additionalPrice->price ?? 0, 2) . ' ' . $market->currency . '/mặt' : 'N/A' }}
+                                                </span>
                                             @endif
                                         @endforeach
                                     @endif
@@ -474,67 +506,64 @@
                                                 $market = $printingPrices->first()->market ?? null;
                                             @endphp
                                             @if($market)
-                                                <div class="px-2 py-1 text-xs font-medium rounded" style="background-color: #FCD34D; color: #78350F;">
-                                                    <strong>{{ $market->code }} (Riêng):</strong>
-                                                    @php
-                                                        $additionalPrice = $printingPrices->where('sides', 2)->first();
-                                                    @endphp
-                                                    @if($additionalPrice)
-                                                        {{ number_format($additionalPrice->price ?? 0, 2) }} {{ $market->currency }}/mặt thêm
-                                                    @else
-                                                        @foreach($printingPrices->sortBy('sides') as $pp)
-                                                            {{ $pp->sides }} mặt: {{ number_format($pp->price ?? 0, 2) }}{{ !$loop->last ? ', ' : '' }}
-                                                        @endforeach
-                                                        {{ $market->currency }}
-                                                    @endif
-                                                </div>
-                                    @endif
-                                @endforeach
+                                                @php
+                                                    $additionalPrice = $printingPrices->where('sides', 2)->first();
+                                                @endphp
+                                                <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-yellow-100 text-yellow-800 border border-yellow-200">
+                                                    {{ $market->code }} (Riêng): {{ $additionalPrice ? number_format($additionalPrice->price ?? 0, 2) . ' ' . $market->currency . '/mặt' : 'N/A' }}
+                                                </span>
+                                            @endif
+                                        @endforeach
                                     @endif
                                 </div>
+                            @else
+                                <span class="text-xs text-gray-400">-</span>
+                            @endif
+                        </td>
+                        <td class="px-6 py-5 align-top text-right">
+                            <div class="flex justify-end items-center gap-1">
+                                <a href="{{ route('admin.products.variants.prices.create', [$product, $variant]) }}" class="p-2 rounded-lg text-gray-400 hover:bg-orange-50 hover:text-orange-600 transition-colors" title="Set Price">
+                                    <span class="material-symbols-outlined text-xl">payments</span>
+                                </a>
+                                @if($product->workshop)
+                                <a href="{{ route('admin.products.workshop-prices.create', [$product, $variant]) }}" class="p-2 rounded-lg text-gray-400 hover:bg-pink-50 hover:text-pink-600 transition-colors" title="Workshop Price">
+                                    <span class="material-symbols-outlined text-xl">factory</span>
+                                </a>
+                                @endif
+                                <a href="{{ route('admin.workshop-skus.create', $variant) }}" class="p-2 rounded-lg text-gray-400 hover:bg-green-50 hover:text-green-600 transition-colors" title="Workshop SKUs">
+                                    <span class="material-symbols-outlined text-xl">qr_code</span>
+                                </a>
+                                <a href="{{ route('admin.products.variants.edit', [$product, $variant]) }}" class="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-blue-600 transition-colors" title="Edit">
+                                    <span class="material-symbols-outlined text-xl">edit_square</span>
+                                </a>
+                                <form action="{{ route('admin.products.variants.destroy', [$product, $variant]) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this variant?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="p-2 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors" title="Delete">
+                                        <span class="material-symbols-outlined text-xl">delete</span>
+                                    </button>
+                                </form>
                             </div>
-                        @endif
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-2 ml-4">
-                        <a href="{{ route('admin.products.variants.prices.create', [$product, $variant]) }}" class="px-3 py-1.5 rounded text-sm font-medium transition-all border" style="color: #F59E0B; border-color: #FEF3C7; background-color: #FFFBEB;" onmouseover="this.style.backgroundColor='#FEF3C7';" onmouseout="this.style.backgroundColor='#FFFBEB';">
-                            Set Price
-                        </a>
-                        @if($product->workshop)
-                        <a href="{{ route('admin.products.workshop-prices.create', [$product, $variant]) }}" class="px-3 py-1.5 rounded text-sm font-medium transition-all border" style="color: #EC4899; border-color: #FCE7F3; background-color: #FDF2F8;" onmouseover="this.style.backgroundColor='#FCE7F3';" onmouseout="this.style.backgroundColor='#FDF2F8';">
-                            Workshop Price
-                        </a>
-                        @endif
-                        <a href="{{ route('admin.workshop-skus.create', $variant) }}" class="px-3 py-1.5 rounded text-sm font-medium transition-all border" style="color: #10B981; border-color: #D1FAE5; background-color: #ECFDF5;" onmouseover="this.style.backgroundColor='#D1FAE5';" onmouseout="this.style.backgroundColor='#ECFDF5';">
-                            Workshop SKUs
-                        </a>
-                        <a href="{{ route('admin.products.variants.edit', [$product, $variant]) }}" class="px-3 py-1.5 rounded text-sm font-medium transition-all border" style="color: #2563EB; border-color: #DBEAFE; background-color: #EFF6FF;" onmouseover="this.style.backgroundColor='#DBEAFE';" onmouseout="this.style.backgroundColor='#EFF6FF';">
-                            Edit
-                        </a>
-                        <form action="{{ route('admin.products.variants.destroy', [$product, $variant]) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this variant?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="px-3 py-1.5 rounded text-sm font-medium transition-all border" style="color: #DC2626; border-color: #FEE2E2; background-color: #FEF2F2;" onmouseover="this.style.backgroundColor='#FEE2E2';" onmouseout="this.style.backgroundColor='#FEF2F2';">
-                                Delete
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            @empty
-            <div class="p-12 text-center">
-                <svg class="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                </svg>
-                <p class="text-sm text-gray-600 mb-4">No variants for this product yet.</p>
-                <a href="{{ route('admin.products.variants.create', $product) }}" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-sm" style="background-color: #2563EB;" onmouseover="this.style.backgroundColor='#1D4ED8';" onmouseout="this.style.backgroundColor='#2563EB';">
-                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                    </svg>
-                    Add First Variant
-                </a>
-            </div>
-            @endforelse
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center">
+                            <svg class="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                            </svg>
+                            <p class="text-sm text-gray-600 mb-4">No variants for this product yet.</p>
+                            <a href="{{ route('admin.products.variants.create', $product) }}" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-sm" style="background-color: #2563EB;" onmouseover="this.style.backgroundColor='#1D4ED8';" onmouseout="this.style.backgroundColor='#2563EB';">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                </svg>
+                                Add First Variant
+                            </a>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
         
         <!-- Pagination -->
@@ -741,6 +770,23 @@
         updateSelectedCount();
     });
 
+    // Bulk Actions Dropdown
+    function toggleBulkActionsDropdown() {
+        const menu = document.getElementById('bulkActionsMenu');
+        if (menu) {
+            menu.classList.toggle('hidden');
+        }
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(event) {
+        const dropdown = document.getElementById('bulkActionsDropdown');
+        const menu = document.getElementById('bulkActionsMenu');
+        if (dropdown && menu && !dropdown.contains(event.target)) {
+            menu.classList.add('hidden');
+        }
+    });
+
     // Filter and Bulk Delete Functions
     function updateUrlParam(param, value) {
         const url = new URL(window.location.href);
@@ -778,19 +824,36 @@
         checkboxes.forEach(cb => {
             cb.checked = checkbox.checked;
         });
+        
+        // Sync both select all checkboxes
+        const selectAllBar = document.getElementById('selectAllVariants');
+        const selectAllTable = document.getElementById('selectAllVariantsTable');
+        if (selectAllBar) selectAllBar.checked = checkbox.checked;
+        if (selectAllTable) selectAllTable.checked = checkbox.checked;
+        
         updateSelectedCount();
     }
 
     // Update selected count
     function updateSelectedCount() {
         const checked = document.querySelectorAll('.variant-checkbox:checked');
+        const allCheckboxes = document.querySelectorAll('.variant-checkbox');
         const count = checked.length;
+        const total = allCheckboxes.length;
+        
         document.getElementById('selectedCount').textContent = count + ' variants được chọn';
         
         const deleteBtn = document.getElementById('bulkDeleteBtn');
         if (deleteBtn) {
             deleteBtn.disabled = count === 0;
         }
+        
+        // Update select all checkboxes
+        const selectAllBar = document.getElementById('selectAllVariants');
+        const selectAllTable = document.getElementById('selectAllVariantsTable');
+        const allSelected = total > 0 && count === total;
+        if (selectAllBar) selectAllBar.checked = allSelected;
+        if (selectAllTable) selectAllTable.checked = allSelected;
     }
 
     // Bulk Delete Variants

@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard') 
 
 @section('title', 'Set Workshop Price - ' . $variant->display_name . ' - ' . config('app.name', 'Laravel'))
 

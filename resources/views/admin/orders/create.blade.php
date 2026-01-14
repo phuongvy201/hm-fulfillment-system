@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard')
 
 @section('title', 'Create Order - ' . config('app.name', 'Laravel'))
 
@@ -229,6 +229,9 @@ function addItemRow() {
 @php
     $activeMenu = 'orders';
 @endphp
+
+
+
 
 
 

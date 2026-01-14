@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard') 
 
 @section('title', 'Bulk Add Variants - ' . config('app.name', 'Laravel'))
 
@@ -12,293 +12,237 @@
 @endsection
 
 @section('content')
-<div class="max-w-4xl">
-    <div class="bg-white rounded-lg shadow-sm p-8">
-        @if ($errors->any())
-            <div class="mb-6 p-4 rounded-lg" style="background-color: #FEE2E2; border: 1px solid #EF4444;">
-                <ul class="text-sm" style="color: #991B1B;">
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        @endif
-
-        <div class="mb-6 p-4 rounded-lg" style="background-color: #EFF6FF; border: 1px solid #DBEAFE;">
-            <p class="text-sm" style="color: #1E40AF;">
-                <strong>💡 Tip:</strong> Nhập tên attributes và values tùy chỉnh. Tất cả combinations sẽ được tạo tự động.<br>
-                <strong>Loại trừ values:</strong> Nếu một attribute1 value chỉ có một số attribute2 values nhất định, dùng format: <code>Value:CODE|V1,V2,V3</code>
-            </p>
+<div class="max-w-5xl mx-auto px-4 py-8">
+    @if ($errors->any())
+        <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200">
+            <ul class="text-sm text-red-800">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
         </div>
+    @endif
 
-        <form method="POST" action="{{ route('admin.products.variants.bulk-store', $product) }}">
-            @csrf
+    <form method="POST" action="{{ route('admin.products.variants.bulk-store', $product) }}">
+        @csrf
 
-            <div class="space-y-6">
-                <!-- Attribute Names -->
-                <div class="grid grid-cols-2 gap-4 p-4 rounded-lg border" style="border-color: #DBEAFE; background-color: #EFF6FF;">
-                    <div>
-                        <label for="attribute1_name" class="block text-sm font-semibold mb-2" style="color: #111827;">Attribute 1 Name</label>
-                        <input 
-                            type="text" 
-                            id="attribute1_name" 
-                            name="attribute1_name" 
-                            value="{{ old('attribute1_name', 'Color') }}"
-                            placeholder="e.g., Color, Material, Style"
-                            class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all"
-                            style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
-                            onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
-                            onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
-                        >
+        <div class="space-y-6">
+            <!-- Info Section -->
+            <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-orange-600">lightbulb</span>
+                    <h2 class="text-lg font-semibold text-gray-900">Hướng dẫn</h2>
+                </div>
+                <div class="p-6">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p class="text-sm text-blue-900">
+                            <strong>💡 Tip:</strong> Nhập tên attributes và values tùy chỉnh. Tất cả combinations sẽ được tạo tự động.<br>
+                            <strong>Loại trừ values:</strong> Nếu một attribute1 value chỉ có một số attribute2 values nhất định, dùng format: <code class="bg-white px-1 py-0.5 rounded text-xs">Value:CODE|V1,V2,V3</code>
+                        </p>
                     </div>
-                    <div>
-                        <label for="attribute2_name" class="block text-sm font-semibold mb-2" style="color: #111827;">Attribute 2 Name</label>
-                        <input 
-                            type="text" 
-                            id="attribute2_name" 
-                            name="attribute2_name" 
-                            value="{{ old('attribute2_name', 'Size') }}"
-                            placeholder="e.g., Size, Pattern, Brand"
-                            class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all"
-                            style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
-                            onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
-                            onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
-                        >
+                </div>
+            </section>
+
+            <!-- Attribute Names Section -->
+            <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-orange-600">settings</span>
+                    <h2 class="text-lg font-semibold text-gray-900">1. Đặt tên Attributes</h2>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="attribute1_name" class="block text-sm font-medium mb-2 text-gray-700">Attribute 1 Name</label>
+                            <input 
+                                type="text" 
+                                id="attribute1_name" 
+                                name="attribute1_name" 
+                                value="{{ old('attribute1_name', 'Color') }}"
+                                placeholder="e.g., Color, Material, Style"
+                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                            >
+                        </div>
+                        <div>
+                            <label for="attribute2_name" class="block text-sm font-medium mb-2 text-gray-700">Attribute 2 Name</label>
+                            <input 
+                                type="text" 
+                                id="attribute2_name" 
+                                name="attribute2_name" 
+                                value="{{ old('attribute2_name', 'Size') }}"
+                                placeholder="e.g., Size, Pattern, Brand"
+                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                            >
+                        </div>
                     </div>
-                    <p class="col-span-2 text-xs" style="color: #6B7280;">
+                    <p class="mt-3 text-xs text-gray-500">
                         💡 Đặt tên cho 2 attributes. Ví dụ: "Color/Size" cho quần áo, "Material/Style" cho nội thất, v.v.
                     </p>
                 </div>
+            </section>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Attribute 1 Values -->
-                    <div>
-                        <label for="colors" class="block text-sm font-semibold mb-2" style="color: #111827;">
-                            <span id="attribute1_label">Color</span> Values <span class="text-red-500">*</span>
-                        </label>
-                        <textarea 
-                            id="colors" 
-                            name="colors" 
-                            rows="12"
-                            required 
-                            autofocus
-                            placeholder="Red&#10;Blue&#10;Green&#10;Black&#10;White&#10;&#10;Với mã màu:&#10;Cardinal Red:CRED&#10;Navy Blue:NAVY&#10;Black:BLAC&#10;&#10;Với sizes tùy chỉnh:&#10;Cardinal Red:CRED|S,M,L,XL,2XL,3XL&#10;Black:BLAC|XS,S,M,L,XL,2XL,3XL,4XL,5XL"
-                            class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all resize-none font-mono text-sm"
-                            style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
-                            onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
-                            onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
-                        >{{ old('colors') }}</textarea>
-                        <p class="mt-1 text-xs text-gray-500">
-                            Enter one value per line.<br>
-                            • Format cơ bản: <code>Value</code> hoặc <code>Value:CODE</code><br>
-                            • Với attribute2 values tùy chỉnh: <code>Value:CODE|V1,V2,V3</code><br>
-                            Ví dụ: <code>Cardinal Red:CRED|S,M,L,XL,2XL,3XL</code>
-                        </p>
-                    </div>
-
-                    <!-- Attribute 2 Values -->
-                    <div>
-                        <label for="sizes" class="block text-sm font-semibold mb-2" style="color: #111827;">
-                            <span id="attribute2_label">Size</span> Values <span class="text-red-500">*</span>
-                        </label>
-                        <textarea 
-                            id="sizes" 
-                            name="sizes" 
-                            rows="12"
-                            required
-                            placeholder="XS&#10;S&#10;M&#10;L&#10;XL&#10;XXL&#10;...&#10;&#10;Or: XS, S, M, L, XL, XXL"
-                            class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all resize-none font-mono text-sm"
-                            style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
-                            onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
-                            onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
-                        >{{ old('sizes') }}</textarea>
-                        <p class="mt-1 text-xs text-gray-500">Enter one value per line or separate by commas</p>
-                    </div>
+            <!-- Attribute Values Section -->
+            <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-orange-600">edit_note</span>
+                    <h2 class="text-lg font-semibold text-gray-900">2. Nhập Attribute Values</h2>
                 </div>
-                
-                <script>
-                    // Update labels when attribute names change
-                    document.getElementById('attribute1_name')?.addEventListener('input', function() {
-                        const label = document.getElementById('attribute1_label');
-                        if (label) {
-                            label.textContent = this.value || 'Color';
-                        }
-                    });
-                    document.getElementById('attribute2_name')?.addEventListener('input', function() {
-                        const label = document.getElementById('attribute2_label');
-                        if (label) {
-                            label.textContent = this.value || 'Size';
-                        }
-                    });
-                </script>
-
-                <!-- Preview -->
-                <div id="preview-section" class="hidden p-4 rounded-lg border" style="border-color: #DBEAFE; background-color: #EFF6FF;">
-                    <h4 class="text-sm font-semibold mb-2" style="color: #1E40AF;">Preview:</h4>
-                    <p class="text-sm text-gray-600">
-                        <span id="preview-count">0</span> variants will be created
-                    </p>
-                    <div id="preview-warning" class="hidden mt-2 p-2 rounded text-xs" style="background-color: #FEF3C7; border: 1px solid #FCD34D; color: #92400E;">
-                        ⚠️ Creating more than 500 variants may take a moment. Please wait...
-                    </div>
-                    <div id="preview-error" class="hidden mt-2 p-2 rounded text-xs" style="background-color: #FEE2E2; border: 1px solid #EF4444; color: #991B1B;">
-                        ❌ Too many variants! Maximum 1000 variants at once. Please split into smaller batches.
-                    </div>
-                </div>
-
-                <!-- SKU Prefix -->
-                <div>
-                    <label for="sku_prefix" class="block text-sm font-semibold mb-2" style="color: #111827;">
-                        Variant SKU Prefix (Nội bộ) <span class="text-red-500">*</span>
-                    </label>
-                    <input 
-                        type="text" 
-                        id="sku_prefix" 
-                        name="sku_prefix" 
-                        value="{{ old('sku_prefix', $product->sku ?? '') }}"
-                        placeholder="e.g., T001"
-                        required
-                        class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all"
-                        style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
-                        onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
-                        onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
-                    >
-                    <p class="mt-1 text-xs text-gray-500">
-                        Format: <code>{prefix}-{COLORCODE}-{SIZE}-{MARKET}</code><br>
-                        Ví dụ: <code>T001-WHIT-3XL-UK</code> (Variant SKU nội bộ)
-                    </p>
-                </div>
-
-                <!-- Workshops for Workshop SKUs -->
-                @if($workshops && $workshops->count() > 0)
-                <div>
-                    <div class="mb-2">
-                        <label class="block text-sm font-semibold mb-2" style="color: #111827;">
-                            Workshops (Để tạo Workshop SKUs)
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input 
-                                type="checkbox" 
-                                id="auto_create_workshop_skus" 
-                                name="auto_create_workshop_skus" 
-                                value="1"
-                                {{ old('auto_create_workshop_skus') ? 'checked' : '' }}
-                                class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                onchange="document.getElementById('workshops-container').style.display = this.checked ? 'block' : 'none';"
-                            >
-                            <span class="text-sm text-gray-700">Tự động tạo Workshop SKUs cho các variants</span>
-                        </label>
-                        <input type="hidden" name="workshop_ids[]" value=""> <!-- Dummy để validation pass -->
-                    </div>
-                    <div id="workshops-container" class="p-4 rounded-lg border" style="border-color: #DBEAFE; background-color: #EFF6FF; display: {{ old('auto_create_workshop_skus') ? 'block' : 'none' }};">
-                        <p class="text-xs text-gray-600 mb-3">
-                            Chọn workshops và nhập Workshop SKU Code cho từng workshop. Format: <code>{WORKSHOP_SKU_CODE}-{COLORCODE}-{SIZE}</code><br>
-                            <strong>Ví dụ:</strong> T-Shirt từ workshop GD05 → SKU Code: <code>GD05</code> → SKU: <code>GD05-WHIT-3XL</code><br>
-                            Sweatshirt từ workshop GD05 → SKU Code: <code>GD056</code> → SKU: <code>GD056-WHIT-3XL</code>
-                        </p>
-                        <div class="space-y-3 max-h-64 overflow-y-auto">
-                            @php
-                                $productWorkshopMappings = $product->workshopProductSkuCodes ?? collect();
-                            @endphp
-                            @foreach($workshops as $index => $workshop)
-                                @php
-                                    $existingMapping = $productWorkshopMappings->firstWhere('workshop_id', $workshop->id);
-                                    $defaultSkuCode = $existingMapping ? $existingMapping->sku_code : $workshop->code;
-                                @endphp
-                                <div class="p-3 rounded-lg border" style="border-color: #DBEAFE; background-color: #FFFFFF;">
-                                    <div class="flex items-center gap-3 mb-2">
-                                        <input 
-                                            type="checkbox" 
-                                            name="workshop_sku_mappings[{{ $index }}][workshop_id]" 
-                                            value="{{ $workshop->id }}"
-                                            class="workshop-checkbox w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                            data-workshop-index="{{ $index }}"
-                                            onchange="toggleWorkshopSkuInput({{ $index }})"
-                                        >
-                                        <div class="flex-1">
-                                            <span class="text-sm font-medium text-gray-900">{{ $workshop->name }}</span>
-                                            <span class="text-xs text-gray-500 ml-2">(Code: {{ $workshop->code }})</span>
-                                        </div>
-                                    </div>
-                                    <div id="workshop-sku-input-{{ $index }}" class="mt-2">
-                                        <label class="block text-xs font-medium text-gray-700 mb-1">
-                                            Workshop SKU Code cho sản phẩm này:
-                                        </label>
-                                        <input 
-                                            type="text" 
-                                            name="workshop_sku_mappings[{{ $index }}][sku_code]" 
-                                            value="{{ old("workshop_sku_mappings.{$index}.sku_code", $defaultSkuCode) }}"
-                                            placeholder="e.g., GD05, GD056"
-                                            class="w-full px-3 py-2 text-sm border rounded-lg font-mono"
-                                            style="border-color: #D1D5DB;"
-                                            onfocus="this.style.borderColor='#2563EB';"
-                                            onblur="this.style.borderColor='#D1D5DB';"
-                                        >
-                                        <p class="text-xs text-gray-500 mt-1">
-                                            Mặc định: {{ $workshop->code }} (nếu để trống sẽ dùng workshop code)
-                                        </p>
-                                    </div>
-                                </div>
-                            @endforeach
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Attribute 1 Values -->
+                        <div>
+                            <label for="colors" class="block text-sm font-medium mb-2 text-gray-700">
+                                <span id="attribute1_label">Color</span> Values <span class="text-red-500">*</span>
+                            </label>
+                            <textarea 
+                                id="colors" 
+                                name="colors" 
+                                rows="12"
+                                required 
+                                autofocus
+                                placeholder="Red&#10;Blue&#10;Green&#10;Black&#10;White&#10;&#10;Với mã màu:&#10;Cardinal Red:CRED&#10;Navy Blue:NAVY&#10;Black:BLAC&#10;&#10;Với sizes tùy chỉnh:&#10;Cardinal Red:CRED|S,M,L,XL,2XL,3XL&#10;Black:BLAC|XS,S,M,L,XL,2XL,3XL,4XL,5XL"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none resize-none font-mono text-sm transition-all"
+                            >{{ old('colors') }}</textarea>
+                            <p class="mt-2 text-xs text-gray-500">
+                                Enter one value per line.<br>
+                                • Format cơ bản: <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">Value</code> hoặc <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">Value:CODE</code><br>
+                                • Với attribute2 values tùy chỉnh: <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">Value:CODE|V1,V2,V3</code><br>
+                                Ví dụ: <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">Cardinal Red:CRED|S,M,L,XL,2XL,3XL</code>
+                            </p>
                         </div>
-                        <script>
-                            function toggleWorkshopSkuInput(index) {
-                                const checkbox = document.querySelector(`[data-workshop-index="${index}"]`);
-                                const inputDiv = document.getElementById(`workshop-sku-input-${index}`);
-                                if (checkbox && inputDiv) {
-                                    if (checkbox.checked) {
-                                        inputDiv.style.display = 'block';
-                                    } else {
-                                        inputDiv.style.display = 'none';
-                                    }
-                                }
-                            }
-                            // Initialize on page load
-                            document.addEventListener('DOMContentLoaded', function() {
-                                document.querySelectorAll('.workshop-checkbox').forEach(checkbox => {
-                                    const index = checkbox.getAttribute('data-workshop-index');
-                                    toggleWorkshopSkuInput(index);
-                                });
-                            });
-                        </script>
+
+                        <!-- Attribute 2 Values -->
+                        <div>
+                            <label for="sizes" class="block text-sm font-medium mb-2 text-gray-700">
+                                <span id="attribute2_label">Size</span> Values <span class="text-red-500">*</span>
+                            </label>
+                            <textarea 
+                                id="sizes" 
+                                name="sizes" 
+                                rows="12"
+                                required
+                                placeholder="XS&#10;S&#10;M&#10;L&#10;XL&#10;XXL&#10;...&#10;&#10;Or: XS, S, M, L, XL, XXL"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none resize-none font-mono text-sm transition-all"
+                            >{{ old('sizes') }}</textarea>
+                            <p class="mt-2 text-xs text-gray-500">Enter one value per line or separate by commas</p>
+                        </div>
                     </div>
                 </div>
-                @endif
+            </section>
+            
+            <script>
+                // Update labels when attribute names change
+                document.getElementById('attribute1_name')?.addEventListener('input', function() {
+                    const label = document.getElementById('attribute1_label');
+                    if (label) {
+                        label.textContent = this.value || 'Color';
+                    }
+                });
+                document.getElementById('attribute2_name')?.addEventListener('input', function() {
+                    const label = document.getElementById('attribute2_label');
+                    if (label) {
+                        label.textContent = this.value || 'Size';
+                    }
+                });
+            </script>
 
-                <!-- Status -->
-                <div>
-                    <label for="status" class="block text-sm font-semibold mb-2" style="color: #111827;">Status</label>
-                    <select 
-                        id="status" 
-                        name="status"
-                        required
-                        class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all"
-                        style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
-                        onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
-                        onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
-                    >
-                        <option value="active" {{ old('status', 'active') === 'active' ? 'selected' : '' }}>Active</option>
-                        <option value="inactive" {{ old('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
-                    </select>
+            <!-- Preview Section -->
+            <div id="preview-section" class="bg-green-50 border border-green-200 rounded-xl p-4 hidden">
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="material-symbols-outlined text-green-600">check_circle</span>
+                    <h4 class="text-sm font-semibold text-green-900">Preview:</h4>
                 </div>
+                <p class="text-sm text-gray-700">
+                    <span id="preview-count">0</span> variants will be created
+                </p>
+                <div id="preview-warning" class="hidden mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                    ⚠️ Creating more than 500 variants may take a moment. Please wait...
+                </div>
+                <div id="preview-error" class="hidden mt-3 p-3 rounded-lg bg-red-50 border border-red-200 text-xs text-red-800">
+                    ❌ Too many variants! Maximum 1000 variants at once. Please split into smaller batches.
+                </div>
+            </div>
 
-                <div class="flex items-center gap-4 pt-4 border-t" style="border-color: #E5E7EB;">
+            <!-- Template SKU Info -->
+            @if($product->sku_template || $product->workshop_sku_template)
+            <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-orange-600">info</span>
+                    <h2 class="text-lg font-semibold text-gray-900">Template SKU đã được cấu hình</h2>
+                </div>
+                <div class="p-6">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2">
+                        @if($product->sku_template)
+                        <p class="text-xs text-gray-700">
+                            <strong>Variant SKU Template:</strong> <code class="bg-white px-2 py-1 rounded text-xs">{{ $product->sku_template }}</code>
+                        </p>
+                        @endif
+                        @if($product->workshop_sku_template)
+                        <p class="text-xs text-gray-700">
+                            <strong>Workshop SKU Template:</strong> <code class="bg-white px-2 py-1 rounded text-xs">{{ $product->workshop_sku_template }}</code>
+                        </p>
+                        @endif
+                        <p class="text-xs text-gray-600 mt-2">
+                            Hệ thống sẽ tự động thay thế <code class="bg-white px-1 py-0.5 rounded text-xs">{COLOR_CODE}</code>, <code class="bg-white px-1 py-0.5 rounded text-xs">{COLOR}</code>, <code class="bg-white px-1 py-0.5 rounded text-xs">{SIZE}</code>, <code class="bg-white px-1 py-0.5 rounded text-xs">{MARKET_CODE}</code>, <code class="bg-white px-1 py-0.5 rounded text-xs">{WORKSHOP_CODE}</code> trong template để tạo SKU cho từng variant.
+                        </p>
+                    </div>
+                </div>
+            </section>
+            @else
+            <section class="bg-white rounded-xl shadow-sm border border-amber-200 overflow-hidden">
+                <div class="p-6 border-b border-amber-200 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-amber-600">warning</span>
+                    <h2 class="text-lg font-semibold text-gray-900">Chưa có template SKU</h2>
+                </div>
+                <div class="p-6">
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <p class="text-xs text-amber-800">
+                            ⚠️ <strong>Chưa có template SKU:</strong> Sản phẩm này chưa có template SKU. Vui lòng cập nhật template SKU trong trang chỉnh sửa sản phẩm trước khi bulk tạo variants.
+                        </p>
+                    </div>
+                </div>
+            </section>
+            @endif
+
+            <!-- Status Section -->
+            <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-orange-600">tune</span>
+                    <h2 class="text-lg font-semibold text-gray-900">3. Status</h2>
+                </div>
+                <div class="p-6">
+                    <label for="status" class="block text-sm font-medium mb-2 text-gray-700">Status</label>
+                    <div class="relative">
+                        <select 
+                            id="status" 
+                            name="status"
+                            required
+                            class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all appearance-none bg-white"
+                        >
+                            <option value="active" {{ old('status', 'active') === 'active' ? 'selected' : '' }}>Active</option>
+                            <option value="inactive" {{ old('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                        </select>
+                        <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Footer Actions -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
+                <div class="flex-1"></div>
+                <div class="flex gap-3 w-full sm:w-auto">
+                    <a href="{{ route('admin.products.show', $product) }}" class="flex-1 sm:flex-none px-6 py-2.5 rounded-lg font-semibold border border-gray-200 hover:bg-gray-50 transition-all text-center">
+                        Cancel
+                    </a>
                     <button 
                         type="submit"
-                        class="px-6 py-3 rounded-lg font-semibold text-white transition-all"
-                        style="background-color: #2563EB;"
-                        onmouseover="this.style.backgroundColor='#1D4ED8';"
-                        onmouseout="this.style.backgroundColor='#2563EB';"
+                        class="flex-1 sm:flex-none px-8 py-2.5 rounded-lg font-semibold bg-orange-600 text-white hover:bg-orange-700 shadow-lg shadow-orange-600/20 transition-all transform active:scale-[0.98]"
                     >
                         Create All Variants
                     </button>
-                    <a href="{{ route('admin.products.show', $product) }}" class="px-6 py-3 rounded-lg font-semibold transition-all border" style="color: #374151; border-color: #D1D5DB;" onmouseover="this.style.backgroundColor='#F3F4F6';" onmouseout="this.style.backgroundColor='transparent';">
-                        Cancel
-                    </a>
                 </div>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>
 
 <script>
@@ -394,4 +338,3 @@
 @php
     $activeMenu = 'products';
 @endphp
-

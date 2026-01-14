@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard') 
 
 @section('title', 'Set Price for Variant - ' . config('app.name', 'Laravel'))
 
@@ -52,12 +52,19 @@
                         <thead>
                             <tr class="border-b-2" style="border-color: #E5E7EB;">
                                 <th class="px-4 py-3 text-left font-semibold text-gray-700 bg-gray-50">Market</th>
-                                <th class="px-4 py-3 text-center font-semibold text-gray-700 bg-gray-50 min-w-[200px]">Price</th>
+                                <th class="px-4 py-3 text-center font-semibold text-gray-700 bg-gray-50 min-w-[250px]">Standard Price</th>
+                                <th class="px-4 py-3 text-center font-semibold text-gray-700 bg-gray-50 min-w-[300px]">Seller Shipping</th>
+                                <th class="px-4 py-3 text-center font-semibold text-gray-700 bg-gray-50 min-w-[300px]">TikTok Shipping</th>
                                 <th class="px-4 py-3 text-center font-semibold text-gray-700 bg-gray-50 min-w-[150px]">Status</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y" style="divide-color: #E5E7EB;">
                             @foreach($markets as $marketItem)
+                            @php
+                                $existingPriceStandard = $existingPrices[$marketItem->id . '_standard'] ?? null;
+                                $existingPriceSeller = $existingPrices[$marketItem->id . '_seller'] ?? null;
+                                $existingPriceTiktok = $existingPrices[$marketItem->id . '_tiktok'] ?? null;
+                            @endphp
                             <tr class="hover:bg-gray-50">
                                 <td class="px-4 py-4 align-top">
                                     <div class="font-medium text-gray-900">{{ $marketItem->name }}</div>
@@ -69,41 +76,117 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-4 align-top">
-                                    @php
-                                        $existingPrice = $existingPrices[$marketItem->id] ?? null;
-                                    @endphp
-                                    <div class="flex items-center gap-2">
-                                        <span class="text-sm font-medium text-gray-600">{{ $marketItem->currency_symbol ?? $marketItem->currency }}</span>
-                                        <input 
-                                            type="number" 
-                                            name="prices[{{ $marketItem->id }}][base_price]" 
-                                            value="{{ old("prices.{$marketItem->id}.base_price", $existingPrice ? $existingPrice->base_price : '') }}"
-                                            step="0.01"
-                                            min="0"
-                                            placeholder="0.00"
-                                            class="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 transition-all text-sm"
-                                            style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
-                                            onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 2px rgba(37, 99, 235, 0.1)';"
-                                            onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
-                                        >
+                                    <div class="space-y-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs font-medium text-gray-600">{{ $marketItem->currency_symbol ?? $marketItem->currency }}</span>
+                                            <input 
+                                                type="number" 
+                                                name="prices[{{ $marketItem->id }}][base_price]" 
+                                                value="{{ old("prices.{$marketItem->id}.base_price", $existingPriceStandard ? $existingPriceStandard->base_price : '') }}"
+                                                step="0.01"
+                                                min="0"
+                                                placeholder="0.00"
+                                                class="flex-1 px-2 py-1.5 border rounded-lg focus:outline-none focus:ring-1 transition-all text-xs"
+                                                style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                                            >
+                                        </div>
+                                        @if($existingPriceStandard)
+                                        <div class="text-xs text-green-600">✓ Saved</div>
+                                        @endif
                                     </div>
-                                    @if($existingPrice)
-                                    <div class="text-xs text-green-600 mt-1">✓ Saved</div>
-                                    @endif
+                                    <input type="hidden" name="prices[{{ $marketItem->id }}][market_id]" value="{{ $marketItem->id }}">
+                                    <input type="hidden" name="prices[{{ $marketItem->id }}][shipping_type]" value="">
                                 </td>
                                 <td class="px-4 py-4 align-top">
-                                    <input 
-                                        type="hidden" 
-                                        name="prices[{{ $marketItem->id }}][market_id]" 
-                                        value="{{ $marketItem->id }}"
-                                    >
+                                    <div class="space-y-2">
+                                        <div>
+                                            <label class="text-xs font-medium text-gray-600 mb-1 block">Item 1:</label>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-medium text-gray-600">{{ $marketItem->currency_symbol ?? $marketItem->currency }}</span>
+                                                <input 
+                                                    type="number" 
+                                                    name="prices[{{ $marketItem->id }}_seller][base_price]" 
+                                                    value="{{ old("prices.{$marketItem->id}_seller.base_price", $existingPriceSeller ? $existingPriceSeller->base_price : '') }}"
+                                                    step="0.01"
+                                                    min="0"
+                                                    placeholder="0.00"
+                                                    class="flex-1 px-2 py-1.5 border rounded-lg focus:outline-none focus:ring-1 transition-all text-xs"
+                                                    style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                                                >
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-medium text-gray-600 mb-1 block">Item 2+ (trừ phí label):</label>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-medium text-gray-600">{{ $marketItem->currency_symbol ?? $marketItem->currency }}</span>
+                                                <input 
+                                                    type="number" 
+                                                    name="prices[{{ $marketItem->id }}_seller][additional_item_price]" 
+                                                    value="{{ old("prices.{$marketItem->id}_seller.additional_item_price", $existingPriceSeller ? $existingPriceSeller->additional_item_price : '') }}"
+                                                    step="0.01"
+                                                    min="0"
+                                                    placeholder="0.00"
+                                                    class="flex-1 px-2 py-1.5 border rounded-lg focus:outline-none focus:ring-1 transition-all text-xs"
+                                                    style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                                                >
+                                            </div>
+                                        </div>
+                                        @if($existingPriceSeller)
+                                        <div class="text-xs text-green-600">✓ Saved</div>
+                                        @endif
+                                    </div>
+                                    <input type="hidden" name="prices[{{ $marketItem->id }}_seller][market_id]" value="{{ $marketItem->id }}">
+                                    <input type="hidden" name="prices[{{ $marketItem->id }}_seller][shipping_type]" value="seller">
+                                </td>
+                                <td class="px-4 py-4 align-top">
+                                    <div class="space-y-2">
+                                        <div>
+                                            <label class="text-xs font-medium text-gray-600 mb-1 block">Item 1:</label>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-medium text-gray-600">{{ $marketItem->currency_symbol ?? $marketItem->currency }}</span>
+                                                <input 
+                                                    type="number" 
+                                                    name="prices[{{ $marketItem->id }}_tiktok][base_price]" 
+                                                    value="{{ old("prices.{$marketItem->id}_tiktok.base_price", $existingPriceTiktok ? $existingPriceTiktok->base_price : '') }}"
+                                                    step="0.01"
+                                                    min="0"
+                                                    placeholder="0.00"
+                                                    class="flex-1 px-2 py-1.5 border rounded-lg focus:outline-none focus:ring-1 transition-all text-xs"
+                                                    style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                                                >
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="text-xs font-medium text-gray-600 mb-1 block">Item 2+ (trừ phí label):</label>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-medium text-gray-600">{{ $marketItem->currency_symbol ?? $marketItem->currency }}</span>
+                                                <input 
+                                                    type="number" 
+                                                    name="prices[{{ $marketItem->id }}_tiktok][additional_item_price]" 
+                                                    value="{{ old("prices.{$marketItem->id}_tiktok.additional_item_price", $existingPriceTiktok ? $existingPriceTiktok->additional_item_price : '') }}"
+                                                    step="0.01"
+                                                    min="0"
+                                                    placeholder="0.00"
+                                                    class="flex-1 px-2 py-1.5 border rounded-lg focus:outline-none focus:ring-1 transition-all text-xs"
+                                                    style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                                                >
+                                            </div>
+                                        </div>
+                                        @if($existingPriceTiktok)
+                                        <div class="text-xs text-green-600">✓ Saved</div>
+                                        @endif
+                                    </div>
+                                    <input type="hidden" name="prices[{{ $marketItem->id }}_tiktok][market_id]" value="{{ $marketItem->id }}">
+                                    <input type="hidden" name="prices[{{ $marketItem->id }}_tiktok][shipping_type]" value="tiktok">
+                                </td>
+                                <td class="px-4 py-4 align-top">
                                     <select 
                                         name="prices[{{ $marketItem->id }}][status]"
                                         class="w-full px-2 py-1.5 border rounded-lg focus:outline-none focus:ring-1 transition-all text-xs"
                                         style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
                                     >
-                                        <option value="active" {{ old("prices.{$marketItem->id}.status", $existingPrice ? $existingPrice->status : 'active') === 'active' ? 'selected' : '' }}>Active</option>
-                                        <option value="inactive" {{ old("prices.{$marketItem->id}.status", $existingPrice ? $existingPrice->status : 'active') === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                                        <option value="active" {{ old("prices.{$marketItem->id}.status", $existingPriceStandard ? $existingPriceStandard->status : 'active') === 'active' ? 'selected' : '' }}>Active</option>
+                                        <option value="inactive" {{ old("prices.{$marketItem->id}.status", $existingPriceStandard ? $existingPriceStandard->status : 'active') === 'inactive' ? 'selected' : '' }}>Inactive</option>
                                     </select>
                                 </td>
                             </tr>

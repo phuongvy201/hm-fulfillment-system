@@ -13,6 +13,7 @@ class UserCustomPrice extends Model
         'variant_id',
         'market_id',
         'price',
+        'additional_item_price', // Giá cho item thứ 2 trở đi (đã trừ phí label)
         'currency',
         'status',
         'shipping_type',
@@ -22,6 +23,7 @@ class UserCustomPrice extends Model
 
     protected $casts = [
         'price' => 'decimal:2',
+        'additional_item_price' => 'decimal:2',
         'valid_from' => 'datetime',
         'valid_to' => 'datetime',
     ];

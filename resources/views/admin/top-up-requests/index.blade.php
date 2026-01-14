@@ -1,245 +1,264 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard') 
 
 @section('title', 'Top-up Requests Management - ' . config('app.name', 'Laravel'))
 
-@section('header-title', 'Top-up Requests Management')
+@section('header-title', 'Top-up Requests')
 @section('header-subtitle', 'Manage top-up requests')
 
-
 @section('content')
-<div class="space-y-6">
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <!-- Success/Error Messages -->
     @if(session('success'))
-    <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
-        <div class="flex items-center gap-2">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-            </svg>
+    <div class="mb-6 p-4 rounded-lg bg-green-50 border border-green-200">
+        <div class="flex items-center gap-2 text-green-800">
+            <span class="material-symbols-outlined">check_circle</span>
             <span>{{ session('success') }}</span>
         </div>
     </div>
     @endif
 
     @if($errors->any())
-    <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-        <div class="flex items-center gap-2">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"></path>
-            </svg>
+    <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200">
+        <div class="flex items-center gap-2 text-red-800">
+            <span class="material-symbols-outlined">error</span>
             <span>{{ $errors->first() }}</span>
         </div>
     </div>
     @endif
 
-    <!-- Filters -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-        <form method="GET" action="{{ route('admin.top-up-requests.index') }}" class="space-y-4">
+    <!-- Filters Section -->
+    <section class="bg-white rounded-xl border border-gray-200 shadow-sm mb-8 p-6">
+        <form method="GET" action="{{ route('admin.top-up-requests.index') }}">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div class="lg:col-span-1">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Search</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
+                        <input 
+                            type="text" 
+                            name="search" 
+                            value="{{ request('search') }}"
+                            placeholder="TXN, User ID..." 
+                            class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-orange-500 focus:border-orange-500 transition-all"
+                        />
+                    </div>
+                </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                    <select name="status" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">All</option>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Status</label>
+                    <select name="status" class="w-full py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-orange-500 focus:border-orange-500">
+                        <option value="">All Status</option>
                         <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                         <option value="approved" {{ request('status') == 'approved' ? 'selected' : '' }}>Approved</option>
                         <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">User</label>
-                    <select name="user_id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">All Users</option>
-                        @foreach($users as $userItem)
-                            <option value="{{ $userItem->id }}" {{ request('user_id') == $userItem->id ? 'selected' : '' }}>
-                                {{ $userItem->name }} ({{ $userItem->email }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Currency</label>
-                    <select name="currency" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="">All</option>
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Currency</label>
+                    <select name="currency" class="w-full py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-orange-500 focus:border-orange-500">
+                        <option value="">All Currencies</option>
                         @foreach($currencies as $currency)
                             <option value="{{ $currency }}" {{ request('currency') == $currency ? 'selected' : '' }}>
-                                {{ $currency }}
+                                {{ $currency }} @if($currency === 'USD')($)@elseif($currency === 'EUR')(€)@elseif($currency === 'VND')(₫)@endif
                             </option>
                         @endforeach
                     </select>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Date From</label>
-                    <input type="date" name="date_from" value="{{ request('date_from') }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Date Range</label>
+                    <input 
+                        type="date" 
+                        name="date_from" 
+                        value="{{ request('date_from') }}"
+                        class="w-full py-2 bg-gray-50 border border-gray-200 rounded-lg focus:ring-orange-500 focus:border-orange-500 text-sm"
+                    />
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Date To</label>
-                    <input type="date" name="date_to" value="{{ request('date_to') }}" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg shadow-sm shadow-orange-500/20 transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined text-sm">filter_alt</span>
+                        Apply Filters
+                    </button>
                 </div>
             </div>
-            <div class="flex items-center gap-4">
-                <div class="flex-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
-                    <select name="sort_by" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="created_at" {{ request('sort_by') == 'created_at' ? 'selected' : '' }}>Date</option>
-                        <option value="amount" {{ request('sort_by') == 'amount' ? 'selected' : '' }}>Amount</option>
-                        <option value="status" {{ request('sort_by') == 'status' ? 'selected' : '' }}>Status</option>
-                    </select>
+            @if(request()->anyFilled(['status', 'user_id', 'currency', 'date_from', 'date_to', 'search']))
+            <div class="mt-4">
+                <a href="{{ route('admin.top-up-requests.index') }}" class="text-sm text-orange-600 hover:text-orange-700 font-medium">
+                    Clear Filters
+                </a>
+            </div>
+            @endif
+        </form>
+    </section>
+
+    <!-- Requests List -->
+    <div class="flex flex-col gap-4">
+        @forelse($requests as $request)
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden {{ $request->status === 'approved' ? 'opacity-90' : '' }}">
+            <div class="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                <div class="flex items-start gap-4 flex-1">
+                    <div class="shrink-0">
+                        @php
+                            $initials = strtoupper(substr($request->user->name, 0, 2));
+                            $colors = [
+                                'emerald' => ['bg-emerald-100', 'text-emerald-600', 'border-emerald-200'],
+                                'blue' => ['bg-blue-100', 'text-blue-600', 'border-blue-200'],
+                                'purple' => ['bg-purple-100', 'text-purple-600', 'border-purple-200'],
+                                'amber' => ['bg-amber-100', 'text-amber-600', 'border-amber-200'],
+                            ];
+                            $colorKey = array_rand($colors);
+                            $colorClasses = $colors[$colorKey];
+                        @endphp
+                        <div class="w-14 h-14 rounded-xl {{ $colorClasses[0] }} {{ $colorClasses[1] }} flex items-center justify-center font-bold text-lg border {{ $colorClasses[2] }}">
+                            {{ $initials }}
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <div class="flex items-center gap-3">
+                            <h3 class="font-bold text-gray-900 text-lg">{{ $request->user->name }}</h3>
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1
+                                @if($request->status === 'pending') bg-amber-100 text-amber-700
+                                @elseif($request->status === 'approved') bg-emerald-100 text-emerald-700
+                                @else bg-red-100 text-red-700
+                                @endif">
+                                @if($request->status === 'pending')
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                @elseif($request->status === 'approved')
+                                    <span class="material-symbols-outlined text-[10px]">done</span>
+                                @endif
+                                {{ strtoupper($request->status) }}
+                            </span>
+                        </div>
+                        <div class="flex flex-wrap items-center text-sm text-gray-500 gap-y-1">
+                            <span class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-base">fingerprint</span>
+                                ID: #{{ $request->user->id }}
+                            </span>
+                            <span class="mx-2 hidden sm:block">•</span>
+                            <span class="flex items-center gap-1">
+                                <span class="material-symbols-outlined text-base">mail_outline</span>
+                                {{ $request->user->email }}
+                            </span>
+                        </div>
+                    </div>
                 </div>
-                <div class="flex-1">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Sort Order</label>
-                    <select name="sort_order" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <option value="desc" {{ request('sort_order') == 'desc' ? 'selected' : '' }}>Descending</option>
-                        <option value="asc" {{ request('sort_order') == 'asc' ? 'selected' : '' }}>Ascending</option>
-                    </select>
+                <div class="grid grid-cols-2 lg:flex lg:items-center gap-x-8 gap-y-4 flex-[1.5]">
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Amount</span>
+                        <span class="text-xl font-bold text-gray-900">
+                            @if($request->currency === 'USD')$@elseif($request->currency === 'EUR')€@elseif($request->currency === 'VND')₫@else{{ $request->currency }} @endif
+                            {{ number_format($request->amount, 2) }}
+                            <span class="text-sm font-medium text-gray-500">{{ $request->currency }}</span>
+                        </span>
+                    </div>
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Payment Method</span>
+                        <div class="flex items-center gap-1 text-gray-700 font-medium">
+                            <span class="material-symbols-outlined text-orange-500 text-lg">
+                                @if($request->payment_method === 'bank_transfer')account_balance
+                                @elseif($request->payment_method === 'credit_card')credit_card
+                                @elseif($request->payment_method === 'lianpay' || $request->payment_method === 'pingpong' || $request->payment_method === 'worldfirst' || $request->payment_method === 'payoneer')payments
+                                @elseaccount_balance
+                                @endif
+                            </span>
+                            {{ ucfirst(str_replace('_', ' ', $request->payment_method)) }}
+                        </div>
+                    </div>
+                    @if($request->transaction_code)
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Transaction Code</span>
+                        <div class="flex items-center gap-1.5 group">
+                            <code class="bg-gray-100 px-2 py-0.5 rounded text-xs font-mono text-gray-600">{{ $request->transaction_code }}</code>
+                            <button 
+                                type="button"
+                                onclick="copyToClipboard('{{ $request->transaction_code }}')"
+                                class="text-gray-400 hover:text-orange-500 transition-colors"
+                                title="Copy to clipboard"
+                            >
+                                <span class="material-symbols-outlined text-base">content_copy</span>
+                            </button>
+                        </div>
+                    </div>
+                    @endif
+                    <div class="flex flex-col">
+                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Timestamp</span>
+                        <span class="text-sm text-gray-600 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-base">calendar_today</span>
+                            {{ $request->created_at->format('d/m/Y H:i') }}
+                        </span>
+                    </div>
                 </div>
-                <div class="flex items-end gap-2">
-                    <button type="submit" class="px-6 py-2 rounded-lg text-sm font-semibold text-white transition-colors bg-blue-500 hover:bg-blue-600">
-                        Filter
-                    </button>
-                    @if(request()->anyFilled(['status', 'user_id', 'currency', 'date_from', 'date_to']))
-                    <a href="{{ route('admin.top-up-requests.index') }}" class="px-6 py-2 rounded-lg text-sm font-semibold transition-colors border border-gray-300 text-gray-700 hover:bg-gray-100">
-                        Clear
-                    </a>
+                <div class="flex items-center gap-2 lg:border-l lg:pl-6 border-gray-200">
+                    @if($request->status === 'pending')
+                        @canPermission('top-up.approve')
+                        <form method="POST" action="{{ route('admin.top-up-requests.approve', $request) }}" class="flex-1 lg:flex-none" onsubmit="return confirm('Are you sure you want to approve this top-up request?');">
+                            @csrf
+                            <input type="hidden" name="admin_notes" value="">
+                            <button type="submit" class="w-full flex items-center justify-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm shadow-emerald-200">
+                                <span class="material-symbols-outlined text-sm">check_circle</span>
+                                Approve
+                            </button>
+                        </form>
+                        <button 
+                            type="button" 
+                            onclick="openRejectModal({{ $request->id }})" 
+                            class="flex-1 lg:flex-none flex items-center justify-center gap-1 border-2 border-red-100 text-red-600 px-4 py-2.5 rounded-lg text-sm font-bold hover:bg-red-50 transition-all"
+                        >
+                            <span class="material-symbols-outlined text-sm">cancel</span>
+                            Reject
+                        </button>
+                        @endcanPermission
+                    @else
+                        <a href="{{ route('admin.top-up-requests.show', $request) }}" class="flex-1 lg:flex-none border border-gray-200 text-gray-600 px-4 py-2.5 rounded-lg text-sm font-bold hover:bg-gray-50 transition-all text-center">
+                            View Receipt
+                        </a>
+                    @endif
+                    <div class="relative group">
+                        <button class="p-2.5 text-gray-400 hover:bg-gray-100 rounded-lg transition-colors">
+                            <span class="material-symbols-outlined">more_vert</span>
+                        </button>
+                        <div class="hidden group-hover:block absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 min-w-[120px]">
+                            <a href="{{ route('admin.top-up-requests.show', $request) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">View Details</a>
+                            @canPermission('top-up.edit')
+                            <a href="{{ route('admin.top-up-requests.edit', $request) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Edit</a>
+                            @endcanPermission
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @if($request->paymentMethod && ($request->paymentMethod->account_number || $request->paymentMethod->account_holder))
+            <div class="px-5 py-3 bg-gray-50 border-t border-gray-100">
+                <div class="flex items-center gap-4 text-xs font-medium text-gray-500">
+                    <span class="uppercase tracking-widest text-[10px] font-bold">Payment Details:</span>
+                    @if($request->paymentMethod->account_number)
+                        <span>Account: {{ $request->paymentMethod->account_number }}</span>
+                    @endif
+                    @if($request->paymentMethod->account_holder)
+                        <span class="text-gray-300">|</span>
+                        <span>Holder: {{ $request->paymentMethod->account_holder }}</span>
                     @endif
                 </div>
             </div>
-        </form>
-    </div>
-
-    <!-- Requests List -->
-    <div class="space-y-4">
-        @forelse($requests as $request)
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 overflow-hidden">
-            <div class="p-6">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Left: User & Basic Info -->
-                    <div class="lg:col-span-2 space-y-4">
-                        <div class="flex items-start gap-4">
-                            <div class="w-12 h-12 rounded-full flex items-center justify-center font-bold text-white text-lg shadow-md bg-gradient-to-br from-green-500 to-green-600 shrink-0">
-                                {{ strtoupper(substr($request->user->name, 0, 2)) }}
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="flex items-center gap-3 mb-2 flex-wrap">
-                                    <h3 class="text-lg font-semibold text-gray-900 truncate">{{ $request->user->name }}</h3>
-                                    <span class="px-3 py-1 text-xs font-semibold rounded-full whitespace-nowrap
-                                        @if($request->status === 'pending') bg-yellow-100 text-yellow-800
-                                        @elseif($request->status === 'approved') bg-green-100 text-green-800
-                                        @else bg-red-100 text-red-800
-                                        @endif">
-                                        {{ strtoupper($request->status) }}
-                                    </span>
-                                </div>
-                                <div class="space-y-2 text-sm">
-                                    <div class="flex items-center gap-2 text-gray-600">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"></path>
-                                        </svg>
-                                        <span><strong>User ID:</strong> #{{ $request->user->id }}</span>
-                                        <span class="text-gray-400">|</span>
-                                        <span>{{ $request->user->email }}</span>
-                                    </div>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-                                        <div class="flex items-center gap-2 text-gray-700">
-                                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                            </svg>
-                                            <span><strong>Amount:</strong> {{ number_format($request->amount, 2) }} {{ $request->currency }}</span>
-                                        </div>
-                                        <div class="flex items-center gap-2 text-gray-700">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                            </svg>
-                                            <span><strong>Payment:</strong> {{ ucfirst(str_replace('_', ' ', $request->payment_method)) }}</span>
-                                        </div>
-                                        @if($request->transaction_code)
-                                        <div class="flex items-center gap-2 text-gray-700">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
-                                            </svg>
-                                            <span><strong>Transaction Code:</strong> <code class="px-2 py-0.5 bg-gray-100 rounded text-xs">{{ $request->transaction_code }}</code></span>
-                                        </div>
-                                        @endif
-                                        <div class="flex items-center gap-2 text-gray-700">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                            </svg>
-                                            <span><strong>Created:</strong> {{ $request->created_at->format('d/m/Y H:i') }}</span>
-                                        </div>
-                                    </div>
-                                    @if($request->paymentMethod)
-                                    <div class="mt-2 p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
-                                        <strong>Payment Details:</strong>
-                                        @if($request->paymentMethod->account_number)
-                                            <span>Account: {{ $request->paymentMethod->account_number }}</span>
-                                        @endif
-                                        @if($request->paymentMethod->account_holder)
-                                            <span class="ml-2">Holder: {{ $request->paymentMethod->account_holder }}</span>
-                                        @endif
-                                    </div>
-                                    @endif
-                                    @if($request->notes)
-                                    <div class="mt-2 p-3 bg-blue-50 rounded-lg text-sm text-gray-700">
-                                        <strong class="text-blue-900">User Notes:</strong>
-                                        <p class="mt-1">{{ $request->notes }}</p>
-                                    </div>
-                                    @endif
-                                    @if($request->admin_notes)
-                                    <div class="mt-2 p-3 {{ $request->status === 'rejected' ? 'bg-red-50' : 'bg-gray-50' }} rounded-lg text-sm {{ $request->status === 'rejected' ? 'text-red-700' : 'text-gray-700' }}">
-                                        <strong>Admin Notes:</strong>
-                                        <p class="mt-1">{{ $request->admin_notes }}</p>
-                                    </div>
-                                    @endif
-                                    @if($request->approved_at && $request->approver)
-                                    <div class="text-xs text-gray-500">
-                                        <strong>Processed by:</strong> {{ $request->approver->name }} on {{ $request->approved_at->format('d/m/Y H:i') }}
-                                    </div>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Right: Actions -->
-                    <div class="lg:col-span-1 flex flex-col gap-3">
-                        <div class="flex flex-col gap-2">
-                            <a href="{{ route('admin.top-up-requests.show', $request) }}" class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors bg-blue-500 hover:bg-blue-600 text-center">
-                                View Details
-                            </a>
-                            @canPermission('top-up.edit')
-                            <a href="{{ route('admin.top-up-requests.edit', $request) }}" class="w-full px-4 py-2 rounded-lg text-sm font-semibold transition-colors border border-gray-300 text-gray-700 hover:bg-gray-100 text-center">
-                                Edit
-                            </a>
-                            @endcanPermission
-                        </div>
-
-                        @if($request->status === 'pending')
-                        @canPermission('top-up.approve')
-                        <div class="border-t pt-3 space-y-2">
-                            <!-- Approve Form -->
-                            <form method="POST" action="{{ route('admin.top-up-requests.approve', $request) }}" class="space-y-2" onsubmit="return confirm('Are you sure you want to approve this top-up request?');">
-                                @csrf
-                                <input type="hidden" name="admin_notes" value="">
-                                <button type="submit" class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors bg-green-500 hover:bg-green-600">
-                                    ✓ Approve
-                                </button>
-                            </form>
-
-                            <!-- Reject Form with Modal -->
-                            <button type="button" onclick="openRejectModal({{ $request->id }})" class="w-full px-4 py-2 rounded-lg text-sm font-semibold text-white transition-colors bg-red-500 hover:bg-red-600">
-                                ✗ Reject
-                            </button>
-                        </div>
-                        @endcanPermission
-                        @endif
-                    </div>
+            @endif
+            @if($request->notes || $request->admin_notes)
+            <div class="px-5 py-3 bg-gray-50 border-t border-gray-100">
+                @if($request->notes)
+                <div class="mb-2">
+                    <span class="text-xs font-semibold text-gray-600">User Notes:</span>
+                    <p class="text-xs text-gray-500 mt-1">{{ $request->notes }}</p>
                 </div>
+                @endif
+                @if($request->admin_notes)
+                <div>
+                    <span class="text-xs font-semibold {{ $request->status === 'rejected' ? 'text-red-600' : 'text-gray-600' }}">Admin Notes:</span>
+                    <p class="text-xs {{ $request->status === 'rejected' ? 'text-red-500' : 'text-gray-500' }} mt-1">{{ $request->admin_notes }}</p>
+                </div>
+                @endif
             </div>
+            @endif
         </div>
         @empty
-        <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-12">
             <div class="text-center">
-                <svg class="mx-auto h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
+                <span class="material-symbols-outlined text-6xl text-gray-400">account_balance_wallet</span>
                 <h3 class="mt-4 text-lg font-semibold text-gray-900">No Requests Found</h3>
                 <p class="mt-2 text-sm text-gray-500">No top-up requests found matching the filters.</p>
             </div>
@@ -247,16 +266,60 @@
         @endforelse
     </div>
 
-    <!-- Pagination -->
+    <!-- Load More / Pagination -->
     @if($requests->hasPages())
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 px-6 py-4">
-        {{ $requests->links() }}
+    <div class="flex justify-center mt-6">
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm px-6 py-4">
+            {{ $requests->links() }}
+        </div>
     </div>
     @endif
+
+    <!-- Stats Footer -->
+    @php
+        $pendingVolume = \App\Models\TopUpRequest::where('status', 'pending')->sum('amount');
+        $totalApproved24h = \App\Models\TopUpRequest::where('status', 'approved')
+            ->where('approved_at', '>=', now()->subDay())
+            ->sum('amount');
+        $activeRequestors = \App\Models\TopUpRequest::where('status', 'pending')
+            ->distinct('user_id')
+            ->count('user_id');
+    @endphp
+    <footer class="mt-10">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div class="bg-white p-5 rounded-xl border border-gray-200 flex items-center gap-4">
+                <div class="p-3 bg-amber-50 text-amber-600 rounded-lg">
+                    <span class="material-symbols-outlined">hourglass_empty</span>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 font-bold uppercase tracking-widest">Pending Volume</p>
+                    <p class="text-xl font-bold text-gray-900">$ {{ number_format($pendingVolume, 2) }}</p>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-gray-200 flex items-center gap-4">
+                <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg">
+                    <span class="material-symbols-outlined">verified</span>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 font-bold uppercase tracking-widest">Total Approved (24h)</p>
+                    <p class="text-xl font-bold text-gray-900">$ {{ number_format($totalApproved24h, 2) }}</p>
+                </div>
+            </div>
+            <div class="bg-white p-5 rounded-xl border border-gray-200 flex items-center gap-4">
+                <div class="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                    <span class="material-symbols-outlined">group</span>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 font-bold uppercase tracking-widest">Active Requestors</p>
+                    <p class="text-xl font-bold text-gray-900">{{ $activeRequestors }} Users</p>
+                </div>
+            </div>
+        </div>
+    </footer>
 </div>
 
 <!-- Reject Modal -->
-<div id="rejectModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+<div id="rejectModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 items-center justify-center p-4">
     <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
         <h3 class="text-lg font-semibold text-gray-900 mb-4">Reject Top-up Request</h3>
         <form id="rejectForm" method="POST" action="">
@@ -300,6 +363,7 @@ function openRejectModal(requestId) {
     const form = document.getElementById('rejectForm');
     form.action = `/admin/top-up-requests/${requestId}/reject`;
     modal.classList.remove('hidden');
+    modal.classList.add('flex');
 }
 
 function closeRejectModal() {
@@ -307,6 +371,7 @@ function closeRejectModal() {
     const form = document.getElementById('rejectForm');
     form.reset();
     modal.classList.add('hidden');
+    modal.classList.remove('flex');
 }
 
 // Close modal when clicking outside
@@ -315,6 +380,18 @@ document.getElementById('rejectModal').addEventListener('click', function(e) {
         closeRejectModal();
     }
 });
+
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        // Show a temporary success message
+        const button = event.target.closest('button');
+        const originalHTML = button.innerHTML;
+        button.innerHTML = '<span class="material-symbols-outlined text-base text-green-500">check</span>';
+        setTimeout(() => {
+            button.innerHTML = originalHTML;
+        }, 2000);
+    });
+}
 </script>
 @endpush
 @endsection
@@ -322,4 +399,3 @@ document.getElementById('rejectModal').addEventListener('click', function(e) {
 @php
     $activeMenu = 'top-up-requests';
 @endphp
-

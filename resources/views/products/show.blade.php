@@ -1,832 +1,453 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $product->name }} - {{ config('app.name', 'HM Fulfillment System') }}</title>
-    <meta name="description" content="{{ \Illuminate\Support\Str::limit($product->description ?? $product->name, 160) }}">
-    
-    @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    @endif
-    
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            line-height: 1.6;
-            color: #1f2937;
-            background-color: #ffffff;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 2rem;
-        }
-        
-        /* Header */
-        header {
-            background: #ffffff;
-            border-bottom: 1px solid #e5e7eb;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.25rem 2rem;
-        }
-        
-        .logo-section {
-            display: flex;
-            flex-direction: column;
-            gap: 0.25rem;
-        }
-        
-        .logo-main {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 1.75rem;
-            font-weight: 800;
-            color: #1f2937;
-        }
-        
-        .logo-image {
-            height: 120px;
-            width: auto;
-            object-fit: contain;
-        }
-        
-        .logo-icon {
-            width: 40px;
-            height: 40px;
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 900;
-            font-size: 1.25rem;
-        }
-        
-        .logo-text {
-            color: #1f2937;
-        }
-        
-        .logo-tagline {
-            font-size: 0.75rem;
-            color: #6b7280;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-        }
-        
-        .nav-menu {
-            display: flex;
-            align-items: center;
-            gap: 0;
-            background: #f3f4f6;
-            padding: 0.5rem;
-            border-radius: 12px;
-        }
-        
-        .nav-menu a {
-            padding: 0.625rem 1.25rem;
-            text-decoration: none;
-            color: #374151;
-            font-weight: 500;
-            font-size: 0.9375rem;
-            border-radius: 8px;
-            transition: all 0.2s;
-        }
-        
-        .nav-menu a:hover {
-            background: #ffffff;
-            color: #f97316;
-        }
-        
-        .nav-actions {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border-radius: 10px;
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.9375rem;
-            transition: all 0.3s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            border: none;
-            cursor: pointer;
-        }
-        
-        .btn-primary {
-            background: #f97316;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #ea580c;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
-        }
-        
-        .btn-outline {
-            background: #e0f2fe;
-            color: #0284c7;
-            border: 1px solid #0284c7;
-        }
-        
-        .btn-outline:hover {
-            background: #0284c7;
-            color: white;
-        }
-        
-        /* Breadcrumb */
-        .breadcrumb {
-            padding: 1rem 2rem;
-            background: #f9fafb;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .breadcrumb a {
-            color: #6b7280;
-            text-decoration: none;
-        }
-        
-        .breadcrumb a:hover {
-            color: #f97316;
-        }
-        
-        /* Product Details */
-        .product-details {
-            padding: 3rem 2rem;
-        }
-        
-        .product-main {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            margin-bottom: 4rem;
-        }
-        
-        .product-gallery {
-            position: relative;
-        }
-        
-        .product-main-image {
-            width: 100%;
-            aspect-ratio: 1;
-            object-fit: cover;
-            border-radius: 12px;
-            background: #f9fafb;
-            margin-bottom: 1rem;
-        }
-        
-        .product-thumbnails {
-            display: flex;
-            gap: 0.75rem;
-            overflow-x: auto;
-        }
-        
-        .product-thumbnail {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 8px;
-            cursor: pointer;
-            border: 2px solid transparent;
-            transition: all 0.2s;
-        }
-        
-        .product-thumbnail:hover {
-            border-color: #f97316;
-        }
-        
-        .product-thumbnail.active {
-            border-color: #f97316;
-        }
-        
-        .product-info {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-        }
-        
-        .product-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #1f2937;
-        }
-        
-        .product-description {
-            font-size: 1.125rem;
-            color: #4b5563;
-            line-height: 1.8;
-        }
-        
-        .product-meta {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            padding: 1.5rem;
-            background: #f9fafb;
-            border-radius: 8px;
-        }
-        
-        .product-meta-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .product-meta-label {
-            color: #6b7280;
-            font-weight: 500;
-        }
-        
-        .product-meta-value {
-            color: #1f2937;
-            font-weight: 600;
-        }
-        
-        /* Variants Section */
-        .variants-section {
-            margin-top: 2rem;
-        }
-        
-        .variants-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 1.5rem;
-        }
-        
-        .variants-table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        }
-        
-        .variants-table thead {
-            background: #f9fafb;
-        }
-        
-        .variants-table th {
-            padding: 1rem;
-            text-align: left;
-            font-weight: 600;
-            color: #1f2937;
-            border-bottom: 2px solid #e5e7eb;
-        }
-        
-        .variants-table td {
-            padding: 1rem;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .variants-table tr:last-child td {
-            border-bottom: none;
-        }
-        
-        .variants-table tr:hover {
-            background: #f9fafb;
-        }
-        
-        .variant-attributes {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-        }
-        
-        .variant-attribute {
-            padding: 0.25rem 0.75rem;
-            background: #f3f4f6;
-            border-radius: 4px;
-            font-size: 0.875rem;
-            color: #4b5563;
-        }
-        
-        .variant-price {
-            font-size: 1.25rem;
-            font-weight: 700;
-            color: #f97316;
-        }
-        
-        .variant-price-label {
-            font-size: 0.875rem;
-            color: #6b7280;
-            font-weight: 400;
-        }
-        
-        /* Variant Selection */
-        .variant-selection {
-            margin-top: 2rem;
-        }
-        
-        .variant-select-group {
-            margin-bottom: 1.5rem;
-        }
-        
-        .variant-select-label {
-            display: block;
-            font-size: 1rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 0.5rem;
-        }
-        
-        .variant-select {
-            width: 100%;
-            padding: 0.875rem 1rem;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            font-size: 1rem;
-            color: #1f2937;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .variant-select:focus {
-            outline: none;
-            border-color: #f97316;
-            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
-        }
-        
-        .selected-variant-info {
-            border: 2px solid #f97316;
-        }
-        
-        /* Related Products */
-        .related-products {
-            margin-top: 5rem;
-            padding-top: 3rem;
-            border-top: 1px solid #e5e7eb;
-        }
-        
-        .related-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 2rem;
-        }
-        
-        .related-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 2rem;
-        }
-        
-        .related-card {
-            background: #ffffff;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            transition: all 0.3s ease;
-            cursor: pointer;
-            text-decoration: none;
-            color: inherit;
-        }
-        
-        .related-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-        }
-        
-        .related-image {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
-        }
-        
-        .related-info {
-            padding: 1.5rem;
-        }
-        
-        .related-name {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 0.5rem;
-        }
-        
-        /* Footer */
-        footer {
-            background: #1f2937;
-            color: white;
-            padding: 4rem 2rem 2rem;
-            margin-top: 4rem;
-        }
-        
-        .footer-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 3rem;
-            margin-bottom: 2rem;
-        }
-        
-        .footer-section h3 {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-        }
-        
-        .footer-section p,
-        .footer-section a {
-            color: #d1d5db;
-            text-decoration: none;
-            line-height: 2;
-            display: block;
-        }
-        
-        .footer-section a:hover {
-            color: #f97316;
-        }
-        
-        .footer-bottom {
-            text-align: center;
-            padding-top: 2rem;
-            border-top: 1px solid #374151;
-            color: #9ca3af;
-        }
-        
-        @media (max-width: 1024px) {
-            .product-main {
-                grid-template-columns: 1fr;
-                gap: 3rem;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            nav {
-                flex-direction: column;
-                gap: 1rem;
-            }
-            
-            .nav-menu {
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            
-            .product-title {
-                font-size: 2rem;
-            }
-            
-            .breadcrumb {
-                padding: 0.75rem 1rem;
-            }
-        }
-    </style>
-</head>
-<body>
-    <!-- Header -->
-    <header>
-        <nav class="container">
-            <div class="logo-section">
-                <div class="logo-main">
-                    <a href="{{ route('home') }}" style="display: flex; align-items: center; gap: 0.5rem; text-decoration: none; color: inherit;">
-                        <img src="{{ \Illuminate\Support\Facades\Storage::url('images/logo HM-02.png') }}" alt="HM FULFILL" class="logo-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                        <div class="logo-fallback" style="display: none; align-items: center; gap: 0.5rem;">
-                            <div class="logo-icon">HM</div>
-                            <span class="logo-text">FULFILL</span>
-                        </div>
-                    </a>
-                </div>
-            </div>
-            <div class="nav-menu">
-                <a href="{{ route('home') }}#how-it-works">How it works</a>
-                <a href="{{ route('products.index') }}">All products</a>
-                <a href="{{ route('home') }}#sku">SKU</a>
-                <a href="{{ route('home') }}#blogs">Blogs</a>
-                <a href="{{ route('home') }}#contact">Contact Us</a>
-                <a href="{{ route('home') }}#help">Help Center</a>
-            </div>
-            <div class="nav-actions">
-                @auth
-                    <a href="{{ route('dashboard') }}" class="btn btn-outline">Dashboard</a>
+@extends('layouts.app')
+
+@section('title', $product->name . ' - ' . config('app.name', 'HM Fulfillment System'))
+@section('description', \Illuminate\Support\Str::limit($product->description ?? $product->name, 160))
+@section('html-class', 'light')
+@section('body-class', 'bg-background-light text-[#181511]')
+
+@php
+    $images = $product->images;
+    $primaryImage = $images->where('is_primary', true)->first() ?? $images->first();
+    $currencySymbols = ['GBP' => '£', 'USD' => '$', 'EUR' => '€'];
+    $firstVariantSummary = $variantsData->first();
+    $summarySymbol = $firstVariantSummary
+        ? ($currencySymbols[strtoupper($firstVariantSummary['currency'] ?? '')] ?? '$')
+        : '$';
+    $defaultPrices = $firstVariantSummary['prices'] ?? [];
+    $marketText = $firstVariantSummary && $firstVariantSummary['market'] ? $firstVariantSummary['market'] : 'Market';
+    $woodPrice = $defaultPrices['wood'] ?? null;
+@endphp
+
+@section('content')
+<main class="flex-1 max-w-[1400px] mx-auto w-full px-4 lg:px-12 py-8">
+    <nav class="flex items-center gap-2 text-sm text-neutral-500 mb-8">
+        <a class="hover:text-primary" href="{{ route('home') }}">Home</a>
+        <span class="material-symbols-outlined text-xs">chevron_right</span>
+        <a class="hover:text-primary" href="{{ route('products.index') }}">Catalog</a>
+        <span class="material-symbols-outlined text-xs">chevron_right</span>
+        <span class="text-neutral-900 font-semibold">{{ $product->name }}</span>
+    </nav>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <div class="space-y-4">
+            <div class="aspect-4/5 bg-white rounded-2xl overflow-hidden relative group border border-neutral-200 shadow-sm">
+                @if($primaryImage)
+                    <img id="mainImage" alt="{{ $product->name }}" class="w-full h-full object-cover"
+                         src="{{ \Illuminate\Support\Facades\Storage::url($primaryImage->image_path) }}">
                 @else
-                    <a href="{{ route('login') }}" class="btn btn-primary">Sign in</a>
-                @endauth
-            </div>
-        </nav>
-    </header>
-
-    <!-- Breadcrumb -->
-    <div class="breadcrumb">
-        <div class="container">
-            <a href="{{ route('home') }}">Home</a> / 
-            <a href="{{ route('products.index') }}">All products</a> / 
-            <span style="color: #1f2937;">{{ $product->name }}</span>
-        </div>
-    </div>
-
-    <!-- Product Details -->
-    <section class="product-details">
-        <div class="container">
-            <div class="product-main">
-                <!-- Product Gallery -->
-                <div class="product-gallery">
-                    @php
-                        $images = $product->images;
-                        $primaryImage = $images->where('is_primary', true)->first() ?? $images->first();
-                    @endphp
-                    
-                    @if($primaryImage)
-                        <img src="{{ \Illuminate\Support\Facades\Storage::url($primaryImage->image_path) }}" 
-                             alt="{{ $product->name }}" 
-                             class="product-main-image" 
-                             id="mainImage">
-                    @endif
-                    
-                    @if($images->count() > 1)
-                        <div class="product-thumbnails">
-                            @foreach($images as $image)
-                                <img src="{{ \Illuminate\Support\Facades\Storage::url($image->image_path) }}" 
-                                     alt="{{ $product->name }} - Image {{ $loop->iteration }}"
-                                     class="product-thumbnail {{ ($image->id === $primaryImage->id) ? 'active' : '' }}"
-                                     onclick="changeMainImage('{{ \Illuminate\Support\Facades\Storage::url($image->image_path) }}', this)">
-                            @endforeach
-                        </div>
-                    @endif
+                    <div class="w-full h-full flex items-center justify-center text-neutral-400">
+                        <span class="material-symbols-outlined text-5xl">photo</span>
+                    </div>
+                @endif
+                <div class="absolute top-6 left-6">
+                    <span class="bg-primary text-white text-xs font-black px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 uppercase tracking-widest">
+                        <span class="material-symbols-outlined text-sm">local_shipping</span>
+                        {{ $product->workshop->market->name ?? 'Fulfillment' }}
+                    </span>
                 </div>
+            </div>
+            @if($images->count() > 1)
+                <div class="grid grid-cols-4 gap-4">
+                    @foreach($images as $image)
+                        <button class="aspect-square rounded-xl border {{ $image->id === ($primaryImage->id ?? null) ? 'border-primary ring-2 ring-primary ring-offset-2 ring-offset-white' : 'border-neutral-200' }} overflow-hidden cursor-pointer hover:border-primary/80 transition-all"
+                                onclick="changeMainImage('{{ \Illuminate\Support\Facades\Storage::url($image->image_path) }}', this)">
+                            <img class="w-full h-full object-cover" src="{{ \Illuminate\Support\Facades\Storage::url($image->image_path) }}" alt="{{ $product->name }}">
+                        </button>
+                    @endforeach
+                </div>
+            @endif
+        </div>
 
-                <!-- Product Info -->
-                <div class="product-info">
-                    <h1 class="product-title">{{ $product->name }}</h1>
-                    
-                    @if($product->description)
-                        <div class="product-description">
-                            {!! nl2br(e($product->description)) !!}
-                        </div>
+        <div class="flex flex-col gap-8">
+            <div>
+                <h1 class="text-4xl lg:text-5xl font-black text-neutral-900 leading-tight mb-2">{{ $product->name }}</h1>
+                <p class="text-neutral-600 font-medium">
+                    {{ $product->workshop->name ?? 'POD Workshop' }}
+                    @if($product->sku)
+                        · SKU: {{ $product->sku }}
                     @endif
+                </p>
+            </div>
 
-                    <!-- Variant Selection -->
-                    @if($product->variants->count() > 0)
-                        @php
-                            // Group attributes by name to create select options
-                            $attributeGroups = [];
-                            foreach ($product->variants as $variant) {
-                                foreach ($variant->variantAttributes as $attr) {
-                                    $attrName = $attr->attribute_name;
-                                    $attrValue = $attr->attribute_value;
-                                    if (!isset($attributeGroups[$attrName])) {
-                                        $attributeGroups[$attrName] = [];
-                                    }
-                                    if (!in_array($attrValue, $attributeGroups[$attrName])) {
-                                        $attributeGroups[$attrName][] = $attrValue;
-                                    }
-                                }
-                            }
-                            // Sort attribute values
-                            foreach ($attributeGroups as $key => $values) {
-                                sort($attributeGroups[$key]);
-                            }
-                        @endphp
+            <div class="bg-white border border-neutral-200 p-6 rounded-2xl text-neutral-900 shadow-sm">
+                <p class="text-neutral-500 text-sm font-bold uppercase tracking-widest mb-4">Base cost (default tier)</p>
+                <div class="grid grid-cols-1 sm:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-neutral-100">
+                    <div class="py-3 pr-4">
+                        <span class="text-3xl font-black text-primary">
+                            {{ ($defaultPrices['default'] ?? null) ? $summarySymbol . number_format($defaultPrices['default'], 2) : 'N/A' }}
+                        </span>
+                        <span class="block text-xs text-neutral-500 font-bold uppercase mt-1">{{ $marketText }}</span>
+                    </div>
+                    <div class="py-3 px-4">
+                        <span class="text-3xl font-black text-neutral-900">
+                            {{ ($defaultPrices['seller'] ?? null) ? $summarySymbol . number_format($defaultPrices['seller'], 2) : '—' }}
+                        </span>
+                        <span class="block text-xs text-neutral-500 font-bold uppercase mt-1">Seller Ship</span>
+                    </div>
+                    <div class="py-3 pl-4">
+                        <span class="text-3xl font-black text-neutral-900">
+                            {{ ($defaultPrices['tiktok'] ?? null) ? $summarySymbol . number_format($defaultPrices['tiktok'], 2) : '—' }}
+                        </span>
+                        <span class="block text-xs text-neutral-500 font-bold uppercase mt-1">TikTok Ship</span>
+                    </div>
+                    <div class="py-3 pl-4">
+                        <span class="text-3xl font-black text-neutral-900">
+                            {{ ($woodPrice ?? null) ? $summarySymbol . number_format($woodPrice, 2) : '—' }}
+                        </span>
+                        <span class="block text-xs text-neutral-500 font-bold uppercase mt-1">Wood Tier</span>
+                    </div>
+                </div>
+            </div>
 
-                        <div class="variant-selection" id="variantSelection">
-                            @foreach($attributeGroups as $attrName => $attrValues)
-                                <div class="variant-select-group">
-                                    <label class="variant-select-label">{{ $attrName }}</label>
-                                    <select class="variant-select" data-attribute="{{ $attrName }}" onchange="updateVariant()">
-                                        <option value="">Select {{ $attrName }}</option>
+            @if($product->description)
+                <div class="space-y-2">
+                    <span class="text-sm font-bold text-neutral-600 uppercase tracking-widest">Overview</span>
+                    <p class="text-neutral-700 leading-relaxed">{!! nl2br(e($product->description)) !!}</p>
+                </div>
+            @endif
+
+            @php
+                $attributeGroups = [];
+                foreach ($product->variants as $variant) {
+                    foreach ($variant->variantAttributes as $attr) {
+                        $attrName = $attr->attribute_name;
+                        $attrValue = $attr->attribute_value;
+                        $attributeGroups[$attrName] = $attributeGroups[$attrName] ?? [];
+                        if (!in_array($attrValue, $attributeGroups[$attrName])) {
+                            $attributeGroups[$attrName][] = $attrValue;
+                        }
+                    }
+                }
+                foreach ($attributeGroups as $key => $values) {
+                    sort($attributeGroups[$key]);
+                }
+            @endphp
+
+            @if($product->variants->count() > 0)
+                @php
+                    // Map tên màu phổ biến sang mã hex để bảo đảm hiển thị nếu dữ liệu chỉ có tên
+                    $colorNameMap = [
+                        'black' => '#000000',
+                        'white' => '#ffffff',
+                        'red' => '#ff0000',
+                        'green' => '#00ff00',
+                        'blue' => '#0000ff',
+                        'yellow' => '#ffff00',
+                        'orange' => '#ffa500',
+                        'pink' => '#ffc0cb',
+                        'purple' => '#800080',
+                        'violet' => '#8a2be2',
+                        'indigo' => '#4b0082',
+                        'brown' => '#8b4513',
+                        'maroon' => '#800000',
+                        'navy' => '#000080',
+                        'navy blue' => '#000080',
+                        'sky' => '#87ceeb',
+                        'sky blue' => '#87ceeb',
+                        'light blue' => '#add8e6',
+                        'dark blue' => '#00008b',
+                        'teal' => '#008080',
+                        'cyan' => '#00ffff',
+                        'magenta' => '#ff00ff',
+                        'lime' => '#00ff00',
+                        'olive' => '#808000',
+                        'gold' => '#ffd700',
+                        'silver' => '#c0c0c0',
+                        'gray' => '#808080',
+                        'grey' => '#808080',
+                        'light gray' => '#d3d3d3',
+                        'light grey' => '#d3d3d3',
+                        'dark gray' => '#404040',
+                        'dark grey' => '#404040',
+                        'beige' => '#f5f5dc',
+                        'ivory' => '#fffff0',
+                        'tan' => '#d2b48c',
+                        'coral' => '#ff7f50',
+                        'salmon' => '#fa8072',
+                        'crimson' => '#dc143c',
+                        'chocolate' => '#d2691e',
+                        'khaki' => '#f0e68c',
+                        'plum' => '#dda0dd',
+                        'orchid' => '#da70d6',
+                        'mint' => '#98ff98',
+                        'mint green' => '#98ff98',
+                        'forest green' => '#228b22',
+                        'dark green' => '#006400',
+                        'light green' => '#90ee90',
+                    ];
+                @endphp
+                <div class="space-y-4">
+                    <span class="text-sm font-bold text-white/60 uppercase tracking-widest">Select variant</span>
+                    <div class="grid grid-cols-1 gap-4">
+                        @foreach($attributeGroups as $attrName => $attrValues)
+                            @php
+                                $attrKey = strtolower($attrName);
+                                $isColor = str_contains($attrKey, 'color');
+                                $isSize = str_contains($attrKey, 'size');
+                            @endphp
+                            <div class="flex flex-col gap-3">
+                                <span class="text-sm font-semibold text-neutral-800">{{ $attrName }}</span>
+
+                                @if($isColor)
+                                    @php
+                                        $parsedColors = collect($attrValues)->map(function($val) use ($colorNameMap) {
+                                            $original = trim((string)$val);
+                                            $label = $original === '' ? 'N/A' : $original;
+                                            $candidate = $label;
+
+                                            if ($candidate === 'N/A') {
+                                                return ['css' => '#e5e7eb', 'label' => $label, 'value' => $original];
+                                            }
+
+                                            // nếu có dạng "red/blue" lấy phần trước dấu /
+                                            if (str_contains($candidate, '/')) {
+                                                $candidate = trim(explode('/', $candidate)[0]);
+                                            }
+
+                                            // chuẩn hóa key tên màu
+                                            $nameKey = strtolower(trim(preg_replace('/\s+/', ' ', $candidate)));
+                                            if (isset($colorNameMap[$nameKey])) {
+                                                return ['css' => $colorNameMap[$nameKey], 'label' => $label, 'value' => $original];
+                                            }
+
+                                            // hex 6 hoặc 3 ký tự, có hoặc không có #
+                                            if (preg_match('/^#?[0-9a-fA-F]{6}$/', $candidate)) {
+                                                return ['css' => '#' . ltrim($candidate, '#'), 'label' => $label, 'value' => $original];
+                                            }
+                                            if (preg_match('/^#?[0-9a-fA-F]{3}$/', $candidate)) {
+                                                $hex = ltrim($candidate, '#');
+                                                $expanded = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+                                                return ['css' => '#' . $expanded, 'label' => $label, 'value' => $original];
+                                            }
+
+                                            // RGB với dấu phẩy: "255,0,0"
+                                            $rgbParts = array_filter(array_map('trim', explode(',', $candidate)), 'strlen');
+                                            $isValidRgb = count($rgbParts) === 3 && collect($rgbParts)->every(function($p) {
+                                                return ctype_digit($p) && (int)$p >= 0 && (int)$p <= 255;
+                                            });
+                                            if ($isValidRgb) {
+                                                return ['css' => 'rgb(' . implode(',', $rgbParts) . ')', 'label' => $label, 'value' => $original];
+                                            }
+
+                                            // fallback: dùng chính chuỗi (màu tên hợp lệ) hoặc trả về xám nhạt nếu rỗng
+                                            return ['css' => $candidate ?: '#e5e7eb', 'label' => $label, 'value' => $original];
+                                        });
+                                    @endphp
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach($parsedColors as $color)
+                                            <button type="button"
+                                                class="variant-choice w-10 h-10 rounded-full border border-neutral-300 hover:border-primary transition-all flex items-center justify-center"
+                                                style="background: {{ $color['css'] }};"
+                                                title="{{ $color['label'] }}"
+                                                data-attribute="{{ $attrName }}"
+                                                data-value="{{ $color['value'] }}"
+                                                aria-label="{{ $color['label'] }}"
+                                                onclick="selectVariant('{{ $attrName }}', '{{ $color['value'] }}', this)">
+                                                <span class="sr-only">{{ $color['label'] }}</span>
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                @elseif($isSize)
+                                    <div class="flex flex-wrap gap-2">
+                                        @foreach($attrValues as $value)
+                                            <button type="button"
+                                                class="variant-choice px-4 py-2 rounded-lg border border-neutral-200 text-sm font-bold text-neutral-800 hover:border-primary transition-all"
+                                                data-attribute="{{ $attrName }}"
+                                                data-value="{{ $value }}"
+                                                onclick="selectVariant('{{ $attrName }}', '{{ $value }}', this)">
+                                                {{ $value }}
+                                            </button>
+                                        @endforeach
+                                    </div>
+                                @else
+                                    <select class="w-full bg-white border border-neutral-200 rounded-xl px-3 py-2 text-sm text-neutral-900 focus:ring-2 focus:ring-primary variant-select"
+                                            data-attribute="{{ $attrName }}" onchange="updateVariant()">
+                                        <option value="">{{ __('Select') }} {{ $attrName }}</option>
                                         @foreach($attrValues as $value)
                                             <option value="{{ $value }}">{{ $value }}</option>
                                         @endforeach
                                     </select>
-                                </div>
-                            @endforeach
-
-                            <!-- Display Selected Variant Info -->
-                            <div class="selected-variant-info" id="selectedVariantInfo" style="display: none; margin-top: 1.5rem; padding: 1.5rem; background: #f9fafb; border-radius: 8px;">
-                                <div class="product-meta-item">
-                                    <span class="product-meta-label">SKU:</span>
-                                    <span class="product-meta-value" id="variantSku">-</span>
-                                </div>
-                                <div class="product-meta-item" id="variantPriceDefault" style="display: none;">
-                                    <span class="product-meta-label">Price (Default):</span>
-                                    <span class="product-meta-value" style="font-size: 1.25rem; color: #f97316; font-weight: 700;">-</span>
-                                </div>
-                                <div class="product-meta-item" id="variantPriceSeller" style="display: none;">
-                                    <span class="product-meta-label">Price (Seller Shipping):</span>
-                                    <span class="product-meta-value" style="font-size: 1.25rem; color: #f97316; font-weight: 700;">-</span>
-                                </div>
-                                <div class="product-meta-item" id="variantPriceTiktok" style="display: none;">
-                                    <span class="product-meta-label">Price (TikTok Shipping):</span>
-                                    <span class="product-meta-value" style="font-size: 1.25rem; color: #f97316; font-weight: 700;">-</span>
-                                </div>
+                                @endif
                             </div>
+                        @endforeach
+                    </div>
+                    <div id="selectedVariantInfo" class="hidden bg-white border border-primary/40 rounded-xl p-4 space-y-2">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-neutral-600 font-semibold">SKU</span>
+                            <span class="font-bold" id="variantSku">-</span>
                         </div>
-                    @else
-                        <div class="product-meta">
-                            <div class="product-meta-item">
-                                <span class="product-meta-label">SKU:</span>
-                                <span class="product-meta-value">{{ $product->sku ?? 'N/A' }}</span>
-                            </div>
+                        <div class="flex items-center justify-between text-sm" id="variantPriceDefault" style="display:none;">
+                            <span class="text-neutral-600 font-semibold">Price (Default)</span>
+                            <span class="font-bold text-primary" id="variantPriceDefaultValue">-</span>
                         </div>
-                    @endif
+                        <div class="flex items-center justify-between text-sm" id="variantPriceSeller" style="display:none;">
+                            <span class="text-neutral-600 font-semibold">Price (Seller)</span>
+                            <span class="font-bold text-primary" id="variantPriceSellerValue">-</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm" id="variantPriceTiktok" style="display:none;">
+                            <span class="text-neutral-600 font-semibold">Price (TikTok)</span>
+                            <span class="font-bold text-primary" id="variantPriceTiktokValue">-</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm" id="variantPriceWood" style="display:none;">
+                            <span class="text-neutral-600 font-semibold">Price (Wood)</span>
+                            <span class="font-bold text-primary" id="variantPriceWoodValue">-</span>
+                        </div>
+                    </div>
                 </div>
+            @endif
+
+            <div class="flex gap-4 mt-2">
+                <a href="#contact" class="flex-1 bg-primary hover:bg-orange-500 text-white font-black py-4 rounded-xl shadow-lg shadow-primary/20 transition-all text-lg text-center">
+                    Contact to Order
+                </a>
+                <button class="w-14 h-14 border-2 border-neutral-200 rounded-xl flex items-center justify-center text-neutral-500 hover:text-rose-500 hover:border-rose-500 transition-all">
+                    <span class="material-symbols-outlined">favorite</span>
+                </button>
             </div>
-
         </div>
-    </section>
+    </div>
 
-    <!-- Related Products -->
     @if($relatedProducts->count() > 0)
-        <section class="related-products">
-            <div class="container">
-                <h2 class="related-title">Related Products</h2>
-                <div class="related-grid">
-                    @foreach($relatedProducts as $related)
-                        @php
-                            $relatedImage = $related->images->first();
-                        @endphp
-                        <a href="{{ route('products.show', $related->slug) }}" class="related-card">
+            <div class="mt-16 border-t border-neutral-200 pt-10">
+            <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-black text-neutral-900">Related Products</h2>
+                    <a href="{{ route('products.index') }}" class="text-primary font-semibold text-sm flex items-center gap-1 hover:gap-2 transition-all">
+                    View all <span class="material-symbols-outlined text-sm">arrow_right_alt</span>
+                </a>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                @foreach($relatedProducts as $related)
+                    @php $relatedImage = $related->images->first(); @endphp
+                    <a href="{{ route('products.show', $related->slug) }}" class="bg-white border border-neutral-200 rounded-2xl overflow-hidden hover:-translate-y-1 transition-all shadow-lg shadow-black/5">
+                        <div class="aspect-4/5 bg-neutral-100">
                             @if($relatedImage)
-                                <img src="{{ \Illuminate\Support\Facades\Storage::url($relatedImage->image_path) }}" 
-                                     alt="{{ $related->name }}" 
-                                     class="related-image">
+                                <img class="w-full h-full object-cover" src="{{ \Illuminate\Support\Facades\Storage::url($relatedImage->image_path) }}" alt="{{ $related->name }}">
+                            @else
+                                <div class="w-full h-full flex items-center justify-center text-neutral-400">
+                                    <span class="material-symbols-outlined text-4xl">photo</span>
+                                </div>
                             @endif
-                            <div class="related-info">
-                                <h3 class="related-name">{{ $related->name }}</h3>
-                            </div>
-                        </a>
-                    @endforeach
-                </div>
-            </div>
-        </section>
-    @endif
-
-    <!-- Footer -->
-    <footer id="contact">
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-section">
-                    <h3>HM FULFILL</h3>
-                    <p>Quality is everything. Professional print-on-demand fulfillment services for creators and businesses worldwide.</p>
-                </div>
-                
-                <div class="footer-section">
-                    <h3>Quick Links</h3>
-                    <a href="{{ route('home') }}#how-it-works">How it works</a>
-                    <a href="{{ route('products.index') }}">All products</a>
-                    <a href="{{ route('home') }}#sku">SKU Management</a>
-                    @auth
-                        <a href="{{ route('dashboard') }}">Dashboard</a>
-                    @else
-                        <a href="{{ route('login') }}">Login</a>
-                        <a href="{{ route('register') }}">Register</a>
-                    @endauth
-                </div>
-                
-                <div class="footer-section">
-                    <h3>Services</h3>
-                    <p>Print-on-Demand</p>
-                    <p>Order Fulfillment</p>
-                    <p>Global Shipping</p>
-                    <p>Design Tools</p>
-                </div>
-                
-                <div class="footer-section" id="help">
-                    <h3>Support</h3>
-                    <p>Need help? We're here for you.</p>
-                    <a href="mailto:support@hmfulfill.com">support@hmfulfill.com</a>
-                    <a href="tel:+1234567890">+1 (234) 567-890</a>
-                </div>
-            </div>
-            
-            <div class="footer-bottom">
-                <p>&copy; {{ date('Y') }} HM FULFILL. All rights reserved. | Quality is Everything</p>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="text-neutral-900 font-bold leading-snug">{{ $related->name }}</h3>
+                            <p class="text-neutral-600 text-sm">{{ $related->workshop->name ?? 'POD Workshop' }}</p>
+                        </div>
+                    </a>
+                @endforeach
             </div>
         </div>
-    </footer>
+    @endif
+</main>
 
-    <script>
-        function changeMainImage(imageSrc, thumbnail) {
-            document.getElementById('mainImage').src = imageSrc;
-            
-            // Update active thumbnail
-            document.querySelectorAll('.product-thumbnail').forEach(thumb => {
-                thumb.classList.remove('active');
-            });
-            thumbnail.classList.add('active');
-        }
+@push('scripts')
+<script>
+    const variantsData = @json($variantsData);
+    const currencySymbols = { GBP: '£', USD: '$', EUR: '€' };
 
-        // Variant data from server
-        const variantsData = @json($variantsData);
+    function changeMainImage(src, btn) {
+        const main = document.getElementById('mainImage');
+        if (main) main.src = src;
+        document.querySelectorAll('button[onclick^="changeMainImage"]').forEach(el => {
+            el.classList.remove('border-primary', 'ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-white');
+            el.classList.add('border-neutral-200');
+        });
+        btn.classList.remove('border-neutral-200');
+        btn.classList.add('border-primary', 'ring-2', 'ring-primary', 'ring-offset-2', 'ring-offset-white');
+    }
 
-        const currencySymbols = {
-            'GBP': '£',
-            'USD': '$',
-            'EUR': '€',
-        };
+    function selectVariant(attribute, value, btn) {
+        // Toggle active state within same attribute group
+        document.querySelectorAll(`.variant-choice[data-attribute="${attribute}"]`).forEach(el => {
+            el.classList.remove('ring-2', 'ring-primary', 'ring-offset-2', 'border-primary');
+            el.classList.add('border-neutral-200');
+        });
+        btn.classList.add('ring-2', 'ring-primary', 'ring-offset-2', 'border-primary');
+        btn.classList.remove('border-neutral-200');
+        updateVariant();
+    }
 
-        function updateVariant() {
-            const selects = document.querySelectorAll('.variant-select');
-            const selectedAttributes = {};
-            
-            // Get all selected values
-            selects.forEach(select => {
-                const attrName = select.dataset.attribute;
-                const attrValue = select.value;
-                if (attrValue) {
-                    selectedAttributes[attrName] = attrValue;
-                }
-            });
-            
-            // Find matching variant
-            const matchingVariant = variantsData.find(variant => {
-                const variantAttrs = variant.attributes;
-                if (Object.keys(selectedAttributes).length !== Object.keys(variantAttrs).length) {
-                    return false;
-                }
-                return Object.keys(selectedAttributes).every(attrName => {
-                    return variantAttrs[attrName] === selectedAttributes[attrName];
-                });
-            });
-            
-            const variantInfo = document.getElementById('selectedVariantInfo');
-            const variantSku = document.getElementById('variantSku');
-            const priceDefault = document.getElementById('variantPriceDefault');
-            const priceSeller = document.getElementById('variantPriceSeller');
-            const priceTiktok = document.getElementById('variantPriceTiktok');
-            
-            if (matchingVariant) {
-                // Show variant info
-                variantInfo.style.display = 'block';
-                variantSku.textContent = matchingVariant.sku;
-                
-                const symbol = currencySymbols[matchingVariant.currency] || '$';
-                const marketText = matchingVariant.market ? ` (${matchingVariant.market})` : '';
-                
-                // Display default price
-                if (matchingVariant.prices && matchingVariant.prices.default) {
-                    const priceText = `${symbol}${parseFloat(matchingVariant.prices.default).toFixed(2)}${marketText}`;
-                    priceDefault.querySelector('.product-meta-value').textContent = priceText;
-                    priceDefault.style.display = 'flex';
-                } else {
-                    priceDefault.style.display = 'none';
-                }
-                
-                // Display seller price
-                if (matchingVariant.prices && matchingVariant.prices.seller) {
-                    const priceText = `${symbol}${parseFloat(matchingVariant.prices.seller).toFixed(2)}${marketText}`;
-                    priceSeller.querySelector('.product-meta-value').textContent = priceText;
-                    priceSeller.style.display = 'flex';
-                } else {
-                    priceSeller.style.display = 'none';
-                }
-                
-                // Display tiktok price
-                if (matchingVariant.prices && matchingVariant.prices.tiktok) {
-                    const priceText = `${symbol}${parseFloat(matchingVariant.prices.tiktok).toFixed(2)}${marketText}`;
-                    priceTiktok.querySelector('.product-meta-value').textContent = priceText;
-                    priceTiktok.style.display = 'flex';
-                } else {
-                    priceTiktok.style.display = 'none';
-                }
-                
-                // If no prices at all
-                if (!matchingVariant.prices || (!matchingVariant.prices.default && !matchingVariant.prices.seller && !matchingVariant.prices.tiktok)) {
-                    priceDefault.style.display = 'flex';
-                    priceDefault.querySelector('.product-meta-value').textContent = 'Contact for price';
-                    priceDefault.querySelector('.product-meta-value').style.color = '#6b7280';
-                }
+    function updateVariant() {
+        const selectedAttributes = {};
+
+        // Read selects
+        document.querySelectorAll('.variant-select').forEach(select => {
+            const val = select.value;
+            if (val) selectedAttributes[select.dataset.attribute] = val;
+        });
+
+        // Read active buttons
+        document.querySelectorAll('.variant-choice.ring-primary').forEach(btn => {
+            const attr = btn.dataset.attribute;
+            const val = btn.dataset.value;
+            if (attr && val) selectedAttributes[attr] = val;
+        });
+
+        const variant = variantsData.find(v => {
+            const attrs = v.attributes;
+            if (Object.keys(selectedAttributes).length !== Object.keys(attrs).length) return false;
+            return Object.keys(selectedAttributes).every(key => attrs[key] === selectedAttributes[key]);
+        });
+
+        const info = document.getElementById('selectedVariantInfo');
+        const skuEl = document.getElementById('variantSku');
+        const priceDefault = document.getElementById('variantPriceDefault');
+        const priceSeller = document.getElementById('variantPriceSeller');
+        const priceTiktok = document.getElementById('variantPriceTiktok');
+        const priceWood = document.getElementById('variantPriceWood');
+        const pdVal = document.getElementById('variantPriceDefaultValue');
+        const psVal = document.getElementById('variantPriceSellerValue');
+        const ptVal = document.getElementById('variantPriceTiktokValue');
+        const pwVal = document.getElementById('variantPriceWoodValue');
+
+        if (!info || !skuEl) return;
+
+        if (variant) {
+            info.classList.remove('hidden');
+            skuEl.textContent = variant.sku;
+            const currencyCode = (variant.currency || '').toString().toUpperCase();
+            const symbol = currencySymbols[currencyCode] || '$';
+            const marketText = variant.market ? ` (${variant.market})` : '';
+
+            if (variant.prices?.default) {
+                priceDefault.style.display = 'flex';
+                pdVal.textContent = `${symbol}${parseFloat(variant.prices.default).toFixed(2)}${marketText}`;
+            } else { priceDefault.style.display = 'none'; }
+
+            if (variant.prices?.seller) {
+                priceSeller.style.display = 'flex';
+                psVal.textContent = `${symbol}${parseFloat(variant.prices.seller).toFixed(2)}${marketText}`;
+            } else { priceSeller.style.display = 'none'; }
+
+            if (variant.prices?.tiktok) {
+                priceTiktok.style.display = 'flex';
+                ptVal.textContent = `${symbol}${parseFloat(variant.prices.tiktok).toFixed(2)}${marketText}`;
+            } else { priceTiktok.style.display = 'none'; }
+
+            if (variant.prices?.wood) {
+                priceWood.style.display = 'flex';
+                pwVal.textContent = `${symbol}${parseFloat(variant.prices.wood).toFixed(2)}${marketText}`;
+            } else { priceWood.style.display = 'none'; }
+
+            if (!variant.prices?.default && !variant.prices?.seller && !variant.prices?.tiktok && !variant.prices?.wood) {
+                priceDefault.style.display = 'flex';
+                pdVal.textContent = 'Contact for price';
+            }
+        } else {
+            const allSelected = Array.from(selects).every(s => s.value);
+            if (allSelected) {
+                info.classList.remove('hidden');
+                skuEl.textContent = 'Not available';
+                priceDefault.style.display = 'flex';
+                pdVal.textContent = 'Variant not found';
+                priceSeller.style.display = 'none';
+                priceTiktok.style.display = 'none';
+                priceWood.style.display = 'none';
             } else {
-                // Check if all attributes are selected but no match
-                const allSelected = Array.from(selects).every(select => select.value !== '');
-                if (allSelected) {
-                    variantInfo.style.display = 'block';
-                    variantSku.textContent = 'Not available';
-                    priceDefault.style.display = 'flex';
-                    priceDefault.querySelector('.product-meta-value').textContent = 'Variant not found';
-                    priceDefault.querySelector('.product-meta-value').style.color = '#ef4444';
-                    priceSeller.style.display = 'none';
-                    priceTiktok.style.display = 'none';
-                } else {
-                    variantInfo.style.display = 'none';
-                }
+                info.classList.add('hidden');
             }
         }
-    </script>
-</body>
-</html>
+    }
+</script>
+@endpush
+@endsection
 

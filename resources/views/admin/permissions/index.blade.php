@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard')
 
 @section('title', 'Permissions Management - ' . config('app.name', 'Laravel'))
 
@@ -194,6 +194,9 @@
 @php
     $activeMenu = 'permissions';
 @endphp
+
+
+
 
 
 

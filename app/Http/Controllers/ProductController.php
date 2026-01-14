@@ -18,13 +18,13 @@ class ProductController extends Controller
     {
         $query = Product::where('status', 'active')
             ->with([
-                'images' => function($query) {
+                'images' => function ($query) {
                     $query->orderBy('is_primary', 'desc')->orderBy('sort_order')->limit(1);
                 },
-                'variants' => function($query) {
+                'variants' => function ($query) {
                     $query->where('status', 'active')->limit(1);
                 },
-                'variants.tierPrices' => function($query) {
+                'variants.tierPrices' => function ($query) {
                     $query->where('status', 'active')
                         ->orderBy('base_price')
                         ->limit(1);
@@ -46,30 +46,30 @@ class ProductController extends Controller
 
         // Filter by price range
         if ($request->has('min_price') && $request->min_price) {
-            $query->whereHas('variants.tierPrices', function($q) use ($request) {
+            $query->whereHas('variants.tierPrices', function ($q) use ($request) {
                 $q->where('status', 'active')
-                  ->where('base_price', '>=', $request->min_price);
+                    ->where('base_price', '>=', $request->min_price);
             });
         }
 
         if ($request->has('max_price') && $request->max_price) {
-            $query->whereHas('variants.tierPrices', function($q) use ($request) {
+            $query->whereHas('variants.tierPrices', function ($q) use ($request) {
                 $q->where('status', 'active')
-                  ->where('base_price', '<=', $request->max_price);
+                    ->where('base_price', '<=', $request->max_price);
             });
         }
 
         // Filter by market
         if ($request->has('market') && $request->market) {
-            $query->whereHas('variants.tierPrices', function($q) use ($request) {
+            $query->whereHas('variants.tierPrices', function ($q) use ($request) {
                 $q->where('status', 'active')
-                  ->where('market_id', $request->market);
+                    ->where('market_id', $request->market);
             });
         }
 
         // Get filter data for view
         $workshops = Workshop::where('status', 'active')
-            ->whereHas('products', function($q) {
+            ->whereHas('products', function ($q) {
                 $q->where('status', 'active')->whereHas('images');
             })
             ->orderBy('name')
@@ -77,12 +77,12 @@ class ProductController extends Controller
 
         // Get markets that have active tier prices
         $marketIds = ProductTierPrice::where('status', 'active')
-            ->whereHas('product', function($q) {
+            ->whereHas('product', function ($q) {
                 $q->where('status', 'active')->whereHas('images');
             })
             ->distinct()
             ->pluck('market_id');
-            
+
         $markets = Market::where('status', 'active')
             ->whereIn('id', $marketIds)
             ->orderBy('name')
@@ -101,14 +101,15 @@ class ProductController extends Controller
         $product = Product::where('slug', $slug)
             ->where('status', 'active')
             ->with([
-                'images' => function($query) {
+                'images' => function ($query) {
                     $query->orderBy('is_primary', 'desc')->orderBy('sort_order');
                 },
-                'variants' => function($query) {
+                'variants' => function ($query) {
                     $query->where('status', 'active');
                 },
                 'variants.variantAttributes',
-                'variants.tierPrices' => function($query) {
+                'variants.workshopSkus',
+                'variants.tierPrices' => function ($query) {
                     $query->where('status', 'active')
                         ->with('market', 'pricingTier')
                         ->orderBy('base_price');
@@ -122,7 +123,7 @@ class ProductController extends Controller
             ->whereNull('min_orders')
             ->orderBy('priority', 'asc')
             ->first();
-        
+
         // Fallback: nếu không có tier wood, lấy tier có priority thấp nhất
         if (!$defaultTier) {
             $defaultTier = PricingTier::where('status', 'active')
@@ -131,21 +132,24 @@ class ProductController extends Controller
         }
 
         // Prepare variants data for JavaScript
-        $variantsData = $product->variants->map(function($variant) use ($defaultTier) {
+        $variantsData = $product->variants->map(function ($variant) use ($defaultTier) {
             $attributes = [];
             foreach ($variant->variantAttributes as $attr) {
                 $attributes[$attr->attribute_name] = $attr->attribute_value;
             }
-            
+
             // Get prices for all shipping types from default tier (wood tier)
             $prices = [
                 'default' => null,
                 'seller' => null,
+                'seller_additional' => null,
                 'tiktok' => null,
+                'tiktok_additional' => null,
+                'wood' => null,
             ];
             $currency = 'USD';
             $market = null;
-            
+
             if ($defaultTier) {
                 // Get default price (shipping_type = null)
                 $defaultPrice = $variant->tierPrices
@@ -153,44 +157,66 @@ class ProductController extends Controller
                     ->where('status', 'active')
                     ->whereNull('shipping_type')
                     ->first();
-                
+
                 if ($defaultPrice) {
                     $prices['default'] = $defaultPrice->base_price;
                     $currency = $defaultPrice->currency;
                     $market = $defaultPrice->market;
                 }
-                
+
                 // Get seller price
                 $sellerPrice = $variant->tierPrices
                     ->where('pricing_tier_id', $defaultTier->id)
                     ->where('status', 'active')
                     ->where('shipping_type', 'seller')
                     ->first();
-                
+
                 if ($sellerPrice) {
                     $prices['seller'] = $sellerPrice->base_price;
+                    $prices['seller_additional'] = $sellerPrice->additional_item_price;
                     if (!$currency) $currency = $sellerPrice->currency;
                     if (!$market) $market = $sellerPrice->market;
                 }
-                
+
                 // Get tiktok price
                 $tiktokPrice = $variant->tierPrices
                     ->where('pricing_tier_id', $defaultTier->id)
                     ->where('status', 'active')
                     ->where('shipping_type', 'tiktok')
                     ->first();
-                
+
                 if ($tiktokPrice) {
                     $prices['tiktok'] = $tiktokPrice->base_price;
+                    $prices['tiktok_additional'] = $tiktokPrice->additional_item_price;
                     if (!$currency) $currency = $tiktokPrice->currency;
                     if (!$market) $market = $tiktokPrice->market;
                 }
+
+                // Get wood tier price
+                $woodTier = PricingTier::where('status', 'active')
+                    ->where(function ($q) {
+                        $q->where('name', 'like', '%wood%')
+                            ->orWhere('slug', 'wood');
+                    })
+                    ->first();
+
+                if ($woodTier) {
+                    $woodPrice = $variant->tierPrices
+                        ->where('pricing_tier_id', $woodTier->id)
+                        ->where('status', 'active')
+                        ->whereNull('shipping_type')
+                        ->first();
+
+                    if ($woodPrice) {
+                        $prices['wood'] = $woodPrice->base_price;
+                    }
+                }
             }
-            
+
             // Fallback: if no default tier prices, get first active prices
             if (!$prices['default'] && !$prices['seller'] && !$prices['tiktok']) {
                 $activePrices = $variant->tierPrices->where('status', 'active');
-                
+
                 // Get default price
                 $firstDefault = $activePrices->whereNull('shipping_type')->first();
                 if ($firstDefault) {
@@ -198,24 +224,26 @@ class ProductController extends Controller
                     $currency = $firstDefault->currency;
                     $market = $firstDefault->market;
                 }
-                
+
                 // Get seller price
                 $firstSeller = $activePrices->where('shipping_type', 'seller')->first();
                 if ($firstSeller) {
                     $prices['seller'] = $firstSeller->base_price;
+                    $prices['seller_additional'] = $firstSeller->additional_item_price;
                     if (!$currency) $currency = $firstSeller->currency;
                     if (!$market) $market = $firstSeller->market;
                 }
-                
+
                 // Get tiktok price
                 $firstTiktok = $activePrices->where('shipping_type', 'tiktok')->first();
                 if ($firstTiktok) {
                     $prices['tiktok'] = $firstTiktok->base_price;
+                    $prices['tiktok_additional'] = $firstTiktok->additional_item_price;
                     if (!$currency) $currency = $firstTiktok->currency;
                     if (!$market) $market = $firstTiktok->market;
                 }
             }
-            
+
             return [
                 'id' => $variant->id,
                 'sku' => $variant->sku ?? 'N/A',
@@ -233,7 +261,7 @@ class ProductController extends Controller
         $relatedProducts = Product::where('status', 'active')
             ->where('workshop_id', $product->workshop_id)
             ->where('id', '!=', $product->id)
-            ->with(['images' => function($query) {
+            ->with(['images' => function ($query) {
                 $query->orderBy('is_primary', 'desc')->orderBy('sort_order')->limit(1);
             }])
             ->whereHas('images')
@@ -244,7 +272,3 @@ class ProductController extends Controller
         return view('products.show', compact('product', 'markets', 'relatedProducts', 'defaultTier', 'variantsData'));
     }
 }
-
-
-
-

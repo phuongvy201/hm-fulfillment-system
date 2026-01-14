@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard')
 
 @section('title', 'Order Details - ' . config('app.name', 'Laravel'))
 
@@ -260,6 +260,9 @@
 @php
     $activeMenu = 'orders';
 @endphp
+
+
+
 
 
 

@@ -24,8 +24,13 @@ class ProductTierPriceController extends Controller
         $product->load('workshop.market');
         $market = $product->workshop->market ?? null;
 
-        // Get all active markets (fallback)
-        $markets = Market::where('status', 'active')->get();
+        // Chỉ lấy market của workshop (nếu có), nếu không có workshop thì lấy tất cả
+        if ($market) {
+            $markets = collect([$market]);
+        } else {
+            // Fallback: nếu không có workshop, lấy tất cả markets
+            $markets = Market::where('status', 'active')->get();
+        }
 
         // Get default tier (first active tier or create a default one)
         $defaultTier = PricingTier::where('status', 'active')->orderBy('priority')->first();
@@ -42,11 +47,17 @@ class ProductTierPriceController extends Controller
         }
 
         // Get existing prices for this variant (only for default tier)
+        // Group by market_id and shipping_type
         $existingPrices = ProductTierPrice::where('variant_id', $variant->id)
             ->where('pricing_tier_id', $defaultTier->id)
             ->with(['market'])
             ->get()
-            ->keyBy('market_id');
+            ->groupBy(function ($price) {
+                return $price->market_id . '_' . ($price->shipping_type ?? 'standard');
+            })
+            ->map(function ($prices) {
+                return $prices->first();
+            });
 
         return view('admin.products.variants.prices.create', compact('product', 'variant', 'markets', 'market', 'existingPrices', 'defaultTier'));
     }
@@ -78,6 +89,7 @@ class ProductTierPriceController extends Controller
             $request->validate([
                 "prices.{$key}.market_id" => ['required', 'exists:markets,id'],
                 "prices.{$key}.base_price" => ['nullable', 'numeric', 'min:0'],
+                "prices.{$key}.additional_item_price" => ['nullable', 'numeric', 'min:0'],
                 "prices.{$key}.shipping_type" => ['nullable', 'in:seller,tiktok'],
                 "prices.{$key}.status" => ['required', 'in:active,inactive'],
             ]);
@@ -121,6 +133,7 @@ class ProductTierPriceController extends Controller
                     ],
                     [
                         'base_price' => $priceData['base_price'],
+                        'additional_item_price' => $priceData['additional_item_price'] ?? null,
                         'currency' => $market->currency,
                         'status' => $priceData['status'] ?? 'active',
                     ]
@@ -157,17 +170,17 @@ class ProductTierPriceController extends Controller
             foreach ($variant->attributes as $attr) {
                 $attrName = $attr->attribute_name;
                 $attrValue = $attr->attribute_value;
-                
+
                 if (!isset($attributesByGroup[$attrName])) {
                     $attributesByGroup[$attrName] = [];
                 }
-                
+
                 if (!in_array($attrValue, $attributesByGroup[$attrName])) {
                     $attributesByGroup[$attrName][] = $attrValue;
                 }
             }
         }
-        
+
         // Sort attribute values for each group
         foreach ($attributesByGroup as $key => $values) {
             sort($attributesByGroup[$key]);
@@ -177,8 +190,13 @@ class ProductTierPriceController extends Controller
         $product->load('workshop.market');
         $market = $product->workshop->market ?? null;
 
-        // Get all active markets (fallback)
-        $markets = Market::where('status', 'active')->get();
+        // Chỉ lấy market của workshop (nếu có), nếu không có workshop thì lấy tất cả
+        if ($market) {
+            $markets = collect([$market]);
+        } else {
+            // Fallback: nếu không có workshop, lấy tất cả markets
+            $markets = Market::where('status', 'active')->get();
+        }
 
         // Get all active tiers
         $tiers = PricingTier::where('status', 'active')->orderBy('priority')->get();
@@ -219,44 +237,45 @@ class ProductTierPriceController extends Controller
             $request->validate([
                 "prices.{$key}.market_id" => ['required', 'exists:markets,id'],
                 "prices.{$key}.base_price" => ['nullable', 'numeric', 'min:0'],
+                "prices.{$key}.additional_item_price" => ['nullable', 'numeric', 'min:0'],
                 "prices.{$key}.status" => ['required', 'in:active,inactive'],
             ]);
         }
 
         // Get all variants for this product
         $allVariants = $product->variants()->with('attributes')->get();
-        
+
         Log::info('[TIER PRICE] All variants loaded', [
             'product_id' => $product->id,
             'total_variants' => $allVariants->count(),
         ]);
-        
+
         // Filter variants based on selected attributes
         $selectedAttributes = $validated['selected_attributes'] ?? [];
         $matchingLogic = $validated['matching_logic'] ?? 'or';
-        
+
         Log::info('[TIER PRICE] Filtering variants', [
             'product_id' => $product->id,
             'selected_attributes' => $selectedAttributes,
             'matching_logic' => $matchingLogic,
         ]);
-        
+
         $matchingVariants = $allVariants->filter(function ($variant) use ($selectedAttributes, $matchingLogic) {
             if (empty($selectedAttributes)) {
                 return false; // No attributes selected
             }
-            
+
             // Filter out empty attribute groups
-            $nonEmptyAttributes = array_filter($selectedAttributes, function($values) {
+            $nonEmptyAttributes = array_filter($selectedAttributes, function ($values) {
                 return !empty($values) && is_array($values);
             });
-            
+
             if (empty($nonEmptyAttributes)) {
                 return false;
             }
-            
+
             $variantAttributes = $variant->attributes->pluck('attribute_value', 'attribute_name')->toArray();
-            
+
             if ($matchingLogic === 'and') {
                 // AND: Variant must have at least one selected value from EACH attribute group
                 foreach ($nonEmptyAttributes as $attrName => $attrValues) {
@@ -305,12 +324,12 @@ class ProductTierPriceController extends Controller
                             ->where('variant_id', $variant->id)
                             ->where('market_id', $priceData['market_id'])
                             ->where('pricing_tier_id', $selectedTier->id);
-                        
+
                         // Nếu có shipping_type, chỉ xóa loại đó, nếu không thì xóa tất cả
                         if (isset($priceData['shipping_type']) && $priceData['shipping_type'] !== '') {
                             $query->where('shipping_type', $priceData['shipping_type']);
                         }
-                        
+
                         $query->delete();
                         $cleared++;
                     }
@@ -375,12 +394,13 @@ class ProductTierPriceController extends Controller
                         ],
                         [
                             'base_price' => $priceData['base_price'],
+                            'additional_item_price' => $priceData['additional_item_price'] ?? null,
                             'currency' => $market->currency,
                             'status' => $priceData['status'] ?? 'active',
                         ]
                     );
                     $saved++;
-                    
+
                     Log::info('[TIER PRICE] Price saved successfully', [
                         'product_id' => $product->id,
                         'variant_id' => $variant->id,
@@ -390,7 +410,7 @@ class ProductTierPriceController extends Controller
                 } catch (\Exception $e) {
                     $errorMsg = "Failed to save price for variant {$variant->display_name}: " . $e->getMessage();
                     $errors[] = $errorMsg;
-                    
+
                     Log::error('[TIER PRICE] Exception occurred', [
                         'product_id' => $product->id,
                         'variant_id' => $variant->id,

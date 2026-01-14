@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard')
 
 @section('title', 'User Pricing Tiers Management - ' . config('app.name', 'Laravel'))
 

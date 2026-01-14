@@ -134,7 +134,7 @@ class ProductVariantController extends Controller
         // Handle JSON string from form
         $variantIdsInput = $request->input('variant_ids');
         $variantIds = [];
-        
+
         if (is_string($variantIdsInput)) {
             $decoded = json_decode($variantIdsInput, true);
             $variantIds = is_array($decoded) ? $decoded : [];
@@ -203,22 +203,26 @@ class ProductVariantController extends Controller
      */
     public function bulkStore(Request $request, Product $product)
     {
+        // Kiểm tra template SKU
+        if (empty($product->sku_template)) {
+            return back()->withErrors(['sku_template' => 'Sản phẩm chưa có template SKU. Vui lòng cập nhật template SKU trong trang chỉnh sửa sản phẩm trước khi bulk tạo variants.'])->withInput();
+        }
+
         $validated = $request->validate([
             'attribute1_name' => ['nullable', 'string', 'max:255'],
             'attribute2_name' => ['nullable', 'string', 'max:255'],
             'colors' => ['required', 'string'], // Values for attribute1
             'sizes' => ['required', 'string'], // Values for attribute2
-            'sku_prefix' => ['required', 'string', 'max:255'],
-            'workshop_sku_mappings' => ['nullable', 'array'],
-            'workshop_sku_mappings.*.workshop_id' => ['required_with:workshop_sku_mappings', 'exists:workshops,id'],
-            'workshop_sku_mappings.*.sku_code' => ['nullable', 'string', 'max:255'],
-            'auto_create_workshop_skus' => ['nullable', 'boolean'],
             'status' => ['required', 'in:active,inactive'],
         ]);
 
         // Get attribute names (default: Color and Size)
         $attribute1Name = $validated['attribute1_name'] ?? 'Color';
         $attribute2Name = $validated['attribute2_name'] ?? 'Size';
+
+        // Templates từ product (bắt buộc)
+        $skuTemplate = $product->sku_template;
+        $workshopSkuTemplate = $product->workshop_sku_template;
 
         // Parse colors and sizes from textarea (one per line or comma-separated)
         // Colors can include custom mappings: "Color Name:CODE|S,M,L,XL" (with specific sizes)
@@ -301,37 +305,35 @@ class ProductVariantController extends Controller
                     continue;
                 }
 
-                // Generate SKU if prefix provided
-                $sku = null;
-                $finalColorCode = null;
-                if (!empty($validated['sku_prefix'])) {
-                    // Use custom color code if provided, otherwise auto-generate
-                    $finalColorCode = $colorCode ?: $this->colorToCode($colorName);
-                    $sizeUpper = strtoupper(trim($size));
+                // Normalize color code cho SKU (dùng trong template)
+                $finalColorCode = $colorCode ?: $this->colorToCode($colorName);
 
-                    // Get market code from workshop
-                    $product->load('workshop.market');
-                    $marketCode = $product->workshop && $product->workshop->market
-                        ? strtoupper($product->workshop->market->code)
-                        : '';
+                // Định nghĩa dữ liệu cho template
+                $sizeForTemplate = $this->formatTemplateValue($size);
+                $colorCodeForTemplate = $this->formatTemplateValue($finalColorCode);
+                $colorNameForTemplate = $this->formatTemplateValue($colorName);
+                $product->loadMissing('workshop.market');
+                $marketCodeRaw = $product->workshop && $product->workshop->market
+                    ? $product->workshop->market->code
+                    : '';
+                $marketCodeTemplate = $this->formatTemplateValue($marketCodeRaw);
+                $workshopCodeTemplate = $this->formatTemplateValue(optional($product->workshop)->code ?? '');
 
-                    // Format: PREFIX-COLORCODE-SIZE-MARKETCODE (Variant SKU - nội bộ)
-                    if ($marketCode) {
-                        $sku = $validated['sku_prefix'] . '-' . $finalColorCode . '-' . $sizeUpper . '-' . $marketCode;
-                    } else {
-                        $sku = $validated['sku_prefix'] . '-' . $finalColorCode . '-' . $sizeUpper;
-                    }
+                // Tạo SKU từ template (bắt buộc)
+                $sku = $this->buildTemplateSku($skuTemplate, [
+                    '{COLOR_CODE}' => $colorCodeForTemplate,
+                    '{COLOR}' => $colorNameForTemplate,
+                    '{SIZE}' => $sizeForTemplate,
+                    '{MARKET_CODE}' => $marketCodeTemplate,
+                    '{WORKSHOP_CODE}' => $workshopCodeTemplate,
+                ]);
 
-                    // Make sure SKU is unique
-                    $originalSku = $sku;
-                    $counter = 1;
-                    while (ProductVariant::where('sku', $sku)->exists()) {
-                        $sku = $originalSku . '-' . $counter;
-                        $counter++;
-                    }
-                } else {
-                    // Even without prefix, we need color code for workshop SKUs
-                    $finalColorCode = $colorCode ?: $this->colorToCode($colorName);
+                // Make sure SKU is unique
+                $originalSku = $sku;
+                $counter = 1;
+                while (ProductVariant::where('sku', $sku)->exists()) {
+                    $sku = $originalSku . '-' . $counter;
+                    $counter++;
                 }
 
 
@@ -360,27 +362,10 @@ class ProductVariantController extends Controller
                     }
                     $created++;
 
-                    // Auto-create workshop SKUs if requested
-                    if (!empty($validated['auto_create_workshop_skus']) && !empty($validated['workshop_sku_mappings'])) {
-                        // Save workshop-product SKU code mappings first (chỉ lần đầu tiên)
-                        static $mappingsSaved = false;
-                        if (!$mappingsSaved) {
-                            $this->saveWorkshopProductSkuCodeMappings($validated['workshop_sku_mappings'], $product->id);
-                            $mappingsSaved = true;
-                        }
-
-                        // Extract workshop IDs from mappings (chỉ lấy những workshop được check)
-                        $workshopIds = [];
-                        foreach ($validated['workshop_sku_mappings'] as $mapping) {
-                            if (!empty($mapping['workshop_id'])) {
-                                $workshopIds[] = $mapping['workshop_id'];
-                            }
-                        }
-
-                        if (!empty($workshopIds)) {
-                            $count = $this->createWorkshopSkusForVariant($variant, $workshopIds, $finalColorCode);
-                            $workshopSkusCreated += $count;
-                        }
+                    // Auto-create workshop SKUs nếu có template workshop SKU và product có workshop
+                    if (!empty($workshopSkuTemplate) && $product->workshop_id) {
+                        $count = $this->createWorkshopSkusForVariant($variant, [$product->workshop_id], $finalColorCode, null, $workshopSkuTemplate, $workshopCodeTemplate, $sizeForTemplate, $colorCodeForTemplate, $colorNameForTemplate);
+                        $workshopSkusCreated += $count;
                     }
                 } catch (\Exception $e) {
                     $errors[] = "Failed to create variant: {$colorName} - {$size}";
@@ -406,9 +391,13 @@ class ProductVariantController extends Controller
     /**
      * Create workshop SKUs for a variant
      */
-    private function createWorkshopSkusForVariant($variant, $workshopIds, $colorCode)
+    private function createWorkshopSkusForVariant($variant, $workshopIds, $colorCode, $separator = null, $workshopSkuTemplate = null, $workshopCodeTemplate = '', $sizeTemplate = '', $colorCodeTemplate = '', $colorNameTemplate = '')
     {
         $created = 0;
+
+        if (empty($workshopSkuTemplate)) {
+            return $created; // Không có template thì không tạo
+        }
 
         // Load variant attributes
         $variant->load('attributes');
@@ -419,19 +408,30 @@ class ProductVariantController extends Controller
         $colorValue = $attrs['Color'] ?? $attrs['color'] ?? (count($attrs) > 0 ? array_values($attrs)[0] : '');
         $sizeValue = $attrs['Size'] ?? $attrs['size'] ?? (count($attrs) > 1 ? array_values($attrs)[1] : '');
 
+        $colorCodeForTemplate = $colorCodeTemplate ?: $this->formatTemplateValue($colorCode);
+
         foreach ($workshopIds as $workshopId) {
             $workshop = Workshop::find($workshopId);
             if (!$workshop) {
                 continue;
             }
 
-            $size = strtoupper(trim($sizeValue ?? ''));
-
             // Get workshop SKU code for this product (có thể khác với workshop code)
             $workshopSkuCode = $this->getWorkshopSkuCodeForProduct($workshop->id, $variant->product_id);
 
-            // Format: WORKSHOPSKUCODE-COLORCODE-SIZE (không có market code)
-            $workshopSku = $workshopSkuCode . '-' . $colorCode . '-' . $size;
+            $workshopCodeTpl = $this->formatTemplateValue($workshopCodeTemplate ?: $workshop->code);
+            $workshopSkuCodeTpl = $this->formatTemplateValue($workshopSkuCode);
+            $sizeTpl = $this->formatTemplateValue($sizeTemplate ?: $sizeValue);
+            $colorTpl = $this->formatTemplateValue($colorNameTemplate ?: $colorValue);
+
+            // Tạo SKU từ template
+            $workshopSku = $this->buildTemplateSku($workshopSkuTemplate, [
+                '{WORKSHOP_SKU_CODE}' => $workshopSkuCodeTpl,
+                '{WORKSHOP_CODE}' => $workshopCodeTpl,
+                '{COLOR_CODE}' => $colorCodeForTemplate,
+                '{COLOR}' => $colorTpl,
+                '{SIZE}' => $sizeTpl,
+            ]);
 
             // Check if SKU already exists
             $existingSku = WorkshopSku::where('sku', $workshopSku)->exists();
@@ -533,7 +533,7 @@ class ProductVariantController extends Controller
                 if (strpos($part, ':') !== false) {
                     list($colorName, $colorCode) = explode(':', $part, 2);
                     $colorName = trim($colorName);
-                    $colorCode = strtoupper(trim($colorCode));
+                    $colorCode = $this->normalizeSkuSegment($colorCode, '');
 
                     if (!empty($colorName)) {
                         $colorInfo['name'] = $colorName;
@@ -690,6 +690,44 @@ class ProductVariantController extends Controller
     }
 
     /**
+     * Normalize a SKU segment: remove accents, uppercase, keep A-Z0-9, replace others with dash.
+     */
+    private function normalizeSkuSegment($value, $default = '', $separator = '-')
+    {
+        $value = trim((string)$value);
+        if ($value === '') {
+            return $default;
+        }
+
+        // Remove accents
+        $trans = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+        $trans = $trans === false ? $value : $trans;
+
+        $trans = strtoupper($trans);
+        // Nếu separator trống hoặc không hợp lệ, fallback '-'
+        if (!in_array($separator, ['-', '/', ' '], true)) {
+            $separator = '-';
+        }
+
+        // Cho phép giữ dấu "-" và "/" làm separator, còn khoảng trắng, "_"… chuyển thành chosen separator
+        $trans = preg_replace('/[ _+]+/', $separator, $trans);
+        // Các ký tự không phải A-Z0-9 hoặc separator hoặc "/" sẽ thành separator
+        $allowed = preg_quote($separator === ' ' ? ' ' : $separator, '/');
+        $trans = preg_replace('/[^A-Z0-9\/' . $allowed . ']+/', $separator, $trans);
+        // Gom nhiều separator liên tiếp thành một
+        $trans = preg_replace('/' . $allowed . '+/', $separator, $trans);
+        // Trim separator thừa ở đầu/cuối (nếu separator là space, trim space)
+        $trimChars = $separator === ' ' ? " \t\n\r\0\x0B" : $separator;
+        $trans = trim($trans, $trimChars);
+
+        if ($trans === '') {
+            return $default;
+        }
+
+        return $trans;
+    }
+
+    /**
      * Save workshop-product SKU code mappings
      */
     private function saveWorkshopProductSkuCodeMappings($mappings, $productId)
@@ -741,5 +779,27 @@ class ProductVariantController extends Controller
         // Nếu không có mapping, dùng workshop code mặc định
         $workshop = Workshop::find($workshopId);
         return $workshop ? $workshop->code : 'UNKNOWN';
+    }
+
+    /**
+     * Làm sạch giá trị dùng trong template (bỏ dấu, uppercase, gom space)
+     */
+    private function formatTemplateValue($value): string
+    {
+        $value = (string)$value;
+        $trans = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
+        $trans = $trans === false ? $value : $trans;
+        $trans = preg_replace('/\s+/', ' ', $trans);
+        return strtoupper(trim($trans ?? ''));
+    }
+
+    /**
+     * Thay thế placeholder trong template SKU
+     */
+    private function buildTemplateSku(string $template, array $replacements): string
+    {
+        $sku = str_ireplace(array_keys($replacements), array_values($replacements), $template);
+        $sku = preg_replace('/\s+/', ' ', $sku);
+        return trim($sku);
     }
 }

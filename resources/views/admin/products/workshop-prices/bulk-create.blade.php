@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard') 
 
 @section('title', 'Set Workshop Prices - ' . $product->name . ' - ' . config('app.name', 'Laravel'))
 
@@ -12,16 +12,34 @@
 @endsection
 
 @section('content')
-<div class="max-w-6xl mx-auto">
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        <form method="POST" action="{{ route('admin.products.workshop-prices.bulk-store', $product) }}">
-            @csrf
+<div class="max-w-5xl mx-auto px-4 py-8">
+    @if ($errors->any())
+        <div class="mb-6 p-4 rounded-lg bg-red-50 border border-red-200">
+            <ul class="text-sm text-red-800">
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
 
-            <div class="px-6 pt-6 pb-4">
-                <div class="mb-6">
-                    <h3 class="text-2xl font-bold text-gray-900 mb-2">🏭 Bulk Set Workshop Prices</h3>
-                    <div class="p-4 rounded-lg" style="background-color: #EFF6FF; border: 1px solid #DBEAFE;">
-                        <p class="text-sm" style="color: #1E40AF;">
+    <form method="POST" action="{{ route('admin.products.workshop-prices.bulk-store', $product) }}">
+        @csrf
+        <input type="hidden" name="workshop_id" value="{{ $workshop->id }}">
+        @if($market)
+        <input type="hidden" name="market_id" value="{{ $market->id }}">
+        @endif
+
+        <div class="space-y-6">
+            <!-- Info Section -->
+            <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-orange-600">info</span>
+                    <h2 class="text-lg font-semibold text-gray-900">Thông tin</h2>
+                </div>
+                <div class="p-6">
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <p class="text-sm text-blue-900">
                             <strong>Workshop:</strong> {{ $workshop->name }} ({{ $workshop->code }})<br>
                             @if($market)
                             <strong>Market:</strong> {{ $market->name }} ({{ $market->code }}) - Currency: <strong>{{ $currency }}</strong>
@@ -29,104 +47,97 @@
                         </p>
                     </div>
                 </div>
+            </section>
 
-                @if ($errors->any())
-                    <div class="mb-6 p-4 rounded-lg" style="background-color: #FEE2E2; border: 1px solid #EF4444;">
-                        <ul class="text-sm" style="color: #991B1B;">
-                            @foreach ($errors->all() as $error)
-                                <li>{{ $error }}</li>
-                            @endforeach
-                        </ul>
+            <!-- Smart Filter Section -->
+            <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-orange-600">filter_alt</span>
+                        <h2 class="text-lg font-semibold text-gray-900">1. Bộ lọc thông minh</h2>
                     </div>
-                @endif
-
-                <!-- Smart Filter Section -->
-                <div class="mb-6 p-4 rounded-lg border" style="border-color: #DBEAFE; background-color: #EFF6FF;">
-                    <div class="flex items-center justify-between mb-3">
-                        <h4 class="text-sm font-semibold" style="color: #1E40AF;">🔍 Bộ lọc thông minh - Chọn variants để set giá workshop</h4>
-                        <div class="flex gap-2">
-                            <button 
-                                type="button" 
-                                onclick="selectAllAttributes()" 
-                                class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-all"
-                                style="color: #2563EB; border-color: #DBEAFE; background-color: #EFF6FF;"
-                                onmouseover="this.style.backgroundColor='#DBEAFE';"
-                                onmouseout="this.style.backgroundColor='#EFF6FF';"
-                            >
-                                ✓ Chọn tất cả
-                            </button>
-                            <button 
-                                type="button" 
-                                onclick="deselectAllAttributes()" 
-                                class="px-3 py-1.5 text-xs font-medium rounded-lg border transition-all"
-                                style="color: #6B7280; border-color: #D1D5DB; background-color: #FFFFFF;"
-                                onmouseover="this.style.backgroundColor='#F3F4F6';"
-                                onmouseout="this.style.backgroundColor='#FFFFFF';"
-                            >
-                                ✗ Bỏ chọn tất cả
-                            </button>
-                        </div>
+                    <div class="flex gap-2">
+                        <button 
+                            type="button" 
+                            onclick="selectAllAttributes()" 
+                            class="text-xs font-medium px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 transition-colors"
+                        >
+                            ✓ Chọn tất cả
+                        </button>
+                        <button 
+                            type="button" 
+                            onclick="deselectAllAttributes()" 
+                            class="text-xs font-medium px-3 py-1.5 rounded bg-gray-100 hover:bg-gray-200 transition-colors"
+                        >
+                            ✕ Bỏ chọn tất cả
+                        </button>
                     </div>
-                    
+                </div>
+                <div class="p-6 space-y-8">
                     @if(!empty($attributesByGroup))
-                        <div class="space-y-4">
-                            @foreach($attributesByGroup as $attrName => $attrValues)
-                                <div>
-                                    <div class="flex items-center justify-between mb-2">
-                                        <label class="block text-sm font-medium" style="color: #111827;">
-                                            {{ $attrName }}:
-                                        </label>
-                                        <div class="flex gap-2">
-                                            <button 
-                                                type="button" 
-                                                onclick="selectAttributeGroup('{{ $attrName }}')" 
-                                                class="px-2 py-1 text-xs font-medium rounded border transition-all"
-                                                style="color: #2563EB; border-color: #DBEAFE; background-color: #EFF6FF;"
-                                                onmouseover="this.style.backgroundColor='#DBEAFE';"
-                                                onmouseout="this.style.backgroundColor='#EFF6FF';"
-                                            >
-                                                ✓ Tất cả
-                                            </button>
-                                            <button 
-                                                type="button" 
-                                                onclick="deselectAttributeGroup('{{ $attrName }}')" 
-                                                class="px-2 py-1 text-xs font-medium rounded border transition-all"
-                                                style="color: #6B7280; border-color: #D1D5DB; background-color: #FFFFFF;"
-                                                onmouseover="this.style.backgroundColor='#F3F4F6';"
-                                                onmouseout="this.style.backgroundColor='#FFFFFF';"
-                                            >
-                                                ✗ Bỏ chọn
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="flex flex-wrap gap-2">
-                                        @foreach($attrValues as $attrValue)
-                                            <label class="flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all" style="border-color: #D1D5DB; background-color: #FFFFFF;" onmouseover="this.style.backgroundColor='#F3F4F6';" onmouseout="this.style.backgroundColor='#FFFFFF';">
-                                                <input 
-                                                    type="checkbox" 
-                                                    name="selected_attributes[{{ $attrName }}][]" 
-                                                    value="{{ $attrValue }}"
-                                                    class="attribute-filter w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                    data-attr-name="{{ $attrName }}"
-                                                    onchange="updateVariantPreview()"
-                                                >
-                                                <span class="text-sm text-gray-700">{{ $attrValue }}</span>
-                                            </label>
-                                        @endforeach
+                        @foreach($attributesByGroup as $attrName => $attrValues)
+                            @php
+                                $attrKey = strtolower($attrName);
+                                $isColor = str_contains($attrKey, 'color');
+                                $isSize = str_contains($attrKey, 'size');
+                            @endphp
+                            <div>
+                                <div class="flex items-center justify-between mb-4">
+                                    <label class="text-sm font-semibold uppercase tracking-wider text-gray-500">{{ $attrName }}</label>
+                                    <div class="space-x-4">
+                                        <button 
+                                            type="button" 
+                                            onclick="selectAttributeGroup('{{ $attrName }}')" 
+                                            class="text-xs text-orange-600 hover:underline"
+                                        >
+                                            Tất cả
+                                        </button>
+                                        <button 
+                                            type="button" 
+                                            onclick="deselectAttributeGroup('{{ $attrName }}')" 
+                                            class="text-xs text-gray-400 hover:underline"
+                                        >
+                                            Bỏ chọn
+                                        </button>
                                     </div>
                                 </div>
-                            @endforeach
-                        </div>
+                                <div class="flex flex-wrap gap-2">
+                                    @foreach($attrValues as $attrValue)
+                                        @php
+                                            $uniqueId = 'attr_' . md5($attrName . '_' . $attrValue);
+                                        @endphp
+                                        <input 
+                                            type="checkbox" 
+                                            id="{{ $uniqueId }}"
+                                            name="selected_attributes[{{ $attrName }}][]" 
+                                            value="{{ $attrValue }}"
+                                            class="hidden chip-checkbox attribute-filter"
+                                            data-attr-name="{{ $attrName }}"
+                                            onchange="updateVariantPreview()"
+                                        >
+                                        <label 
+                                            for="{{ $uniqueId }}"
+                                            class="px-4 py-2 rounded-{{ $isColor ? 'full' : 'lg' }} border border-gray-200 text-sm cursor-pointer hover:border-orange-500 transition-all flex items-center gap-2 {{ $isSize ? 'min-w-[50px] text-center' : '' }}"
+                                        >
+                                            @if($isColor)
+                                                <span class="w-3 h-3 rounded-full bg-gray-300"></span>
+                                            @endif
+                                            {{ $attrValue }}
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endforeach
                         
-                        <div class="mt-4 pt-4 border-t" style="border-color: #DBEAFE;">
-                            <label class="block text-sm font-medium mb-2" style="color: #111827;">Logic matching:</label>
+                        <div class="pt-4 border-t border-gray-100">
+                            <label class="block text-sm font-medium mb-2 text-gray-900">Logic matching:</label>
                             <div class="flex gap-4">
                                 <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="matching_logic" value="and" checked class="w-4 h-4 text-blue-600 focus:ring-blue-500" onchange="updateVariantPreview()">
+                                    <input type="radio" name="matching_logic" value="and" checked class="w-4 h-4 text-orange-600 focus:ring-orange-500" onchange="updateVariantPreview()">
                                     <span class="text-sm text-gray-700">AND (Tất cả attributes phải khớp)</span>
                                 </label>
                                 <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="matching_logic" value="or" class="w-4 h-4 text-blue-600 focus:ring-blue-500" onchange="updateVariantPreview()">
+                                    <input type="radio" name="matching_logic" value="or" class="w-4 h-4 text-orange-600 focus:ring-orange-500" onchange="updateVariantPreview()">
                                     <span class="text-sm text-gray-700">OR (Bất kỳ attribute nào khớp)</span>
                                 </label>
                             </div>
@@ -135,25 +146,28 @@
                         <p class="text-sm text-gray-600">Không có attributes để lọc. Tất cả variants sẽ được chọn.</p>
                     @endif
                 </div>
+            </section>
 
-                <!-- Preview Section -->
-                <div id="variantPreview" class="mb-6 p-4 rounded-lg border hidden" style="border-color: #D1FAE5; background-color: #ECFDF5;">
-                    <div class="flex items-center gap-2">
-                        <svg class="w-5 h-5" style="color: #059669;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                        <p class="text-sm font-medium" style="color: #059669;">
-                            <span id="previewCount">0</span> variants sẽ được áp dụng giá workshop
-                        </p>
-                    </div>
-                    <div id="previewVariants" class="mt-2 text-xs text-gray-600 max-h-32 overflow-y-auto"></div>
+            <!-- Preview Section -->
+            <div id="variantPreview" class="bg-green-50 border border-green-200 rounded-xl p-4 hidden">
+                <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-green-600">check_circle</span>
+                    <p class="text-sm font-medium text-green-800">
+                        <span id="previewCount">0</span> variants sẽ được áp dụng giá workshop
+                    </p>
                 </div>
+                <div id="previewVariants" class="mt-2 text-xs text-gray-600 max-h-32 overflow-y-auto"></div>
+            </div>
 
-                <!-- Price Settings Section -->
-                <div class="mb-6">
-                    <h4 class="text-sm font-semibold mb-3" style="color: #111827;">💰 Thiết lập giá workshop (base price)</h4>
-                    <div class="mb-3 p-3 rounded-lg" style="background-color: #FEF3C7; border: 1px solid #FCD34D;">
-                        <p class="text-xs" style="color: #92400E;">
+            <!-- Price Settings Section -->
+            <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-6 border-b border-gray-100 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-orange-600">edit_note</span>
+                    <h2 class="text-lg font-semibold text-gray-900">2. Thiết lập giá workshop ({{ $currency }})</h2>
+                </div>
+                <div class="p-6 space-y-6">
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                        <p class="text-sm text-amber-800">
                             <strong>💡 Lưu ý:</strong><br>
                             • Giá workshop là giá cơ bản mà workshop tính cho sản phẩm/variant này<br>
                             • Giá này không bao gồm phí ship hay giá in<br>
@@ -163,105 +177,129 @@
                             • Currency sẽ tự động lấy từ market của workshop ({{ $currency }})
                         </p>
                     </div>
-                    <div class="space-y-4">
+
+                    <div class="space-y-6">
                         <!-- Giá ship by Seller -->
-                        <div>
-                            <label class="block text-xs font-medium mb-1" style="color: #6B7280;">Giá workshop ship by Seller ({{ $currency }}):</label>
-                            <input 
-                                type="number" 
-                                name="prices[seller][base_price]" 
-                                step="0.01" 
-                                min="0"
-                                placeholder="0.00"
-                                value="{{ old('prices.seller.base_price') }}"
-                                class="w-full px-3 py-2 border rounded-lg text-sm"
-                                style="border-color: #D1D5DB;"
-                            >
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-2 text-gray-700 font-medium">
+                                <span class="material-symbols-outlined text-blue-500">local_shipping</span>
+                                Ship by Seller
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1.5">Base Price</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{{ $currency === 'USD' ? '$' : ($currency === 'EUR' ? '€' : ($currency === 'VND' ? '₫' : $currency . ' ')) }}</span>
+                                    <input 
+                                        type="number" 
+                                        name="prices[seller][base_price]" 
+                                        step="0.01" 
+                                        min="0"
+                                        placeholder="0.00"
+                                        value="{{ old('prices.seller.base_price') }}"
+                                        class="w-full bg-white border border-gray-200 rounded-lg py-2.5 pl-7 pr-4 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                                    >
+                                    <input type="hidden" name="prices[seller][shipping_type]" value="seller">
+                                </div>
+                            </div>
                         </div>
+                        
+                        <div class="h-px bg-gray-100"></div>
                         
                         <!-- Giá ship by TikTok -->
-                        <div>
-                            <label class="block text-xs font-medium mb-1" style="color: #6B7280;">Giá workshop ship by TikTok ({{ $currency }}):</label>
-                            <input 
-                                type="number" 
-                                name="prices[tiktok][base_price]" 
-                                step="0.01" 
-                                min="0"
-                                placeholder="0.00"
-                                value="{{ old('prices.tiktok.base_price') }}"
-                                class="w-full px-3 py-2 border rounded-lg text-sm"
-                                style="border-color: #D1D5DB;"
-                            >
-                        </div>
-                        
-                        <div>
-                            <label class="block text-xs font-medium mb-1" style="color: #6B7280;">Status:</label>
-                            <select 
-                                name="status" 
-                                class="w-full px-3 py-2 border rounded-lg text-sm"
-                                style="border-color: #D1D5DB;"
-                                required
-                            >
-                                <option value="active" {{ old('status', 'active') === 'active' ? 'selected' : '' }}>Active</option>
-                                <option value="inactive" {{ old('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
-                            </select>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block text-xs font-medium mb-1" style="color: #6B7280;">Valid From:</label>
-                                <input 
-                                    type="date" 
-                                    name="valid_from" 
-                                    value="{{ old('valid_from') }}"
-                                    class="w-full px-3 py-2 border rounded-lg text-sm"
-                                    style="border-color: #D1D5DB;"
-                                >
+                        <div class="space-y-4">
+                            <div class="flex items-center gap-2 text-gray-700 font-medium">
+                                <span class="material-symbols-outlined text-gray-900">bolt</span>
+                                Ship by TikTok
                             </div>
                             <div>
-                                <label class="block text-xs font-medium mb-1" style="color: #6B7280;">Valid To:</label>
-                                <input 
-                                    type="date" 
-                                    name="valid_to" 
-                                    value="{{ old('valid_to') }}"
-                                    class="w-full px-3 py-2 border rounded-lg text-sm"
-                                    style="border-color: #D1D5DB;"
-                                >
+                                <label class="block text-xs text-gray-500 mb-1.5">Base Price</label>
+                                <div class="relative">
+                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{{ $currency === 'USD' ? '$' : ($currency === 'EUR' ? '€' : ($currency === 'VND' ? '₫' : $currency . ' ')) }}</span>
+                                    <input 
+                                        type="number" 
+                                        name="prices[tiktok][base_price]" 
+                                        step="0.01" 
+                                        min="0"
+                                        placeholder="0.00"
+                                        value="{{ old('prices.tiktok.base_price') }}"
+                                        class="w-full bg-white border border-gray-200 rounded-lg py-2.5 pl-7 pr-4 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                                    >
+                                    <input type="hidden" name="prices[tiktok][shipping_type]" value="tiktok">
+                                </div>
                             </div>
+                        </div>
+                        
+                        <div class="h-px bg-gray-100"></div>
+                        
+                        <!-- Status và Valid Dates -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1.5">Status</label>
+                                <div class="relative">
+                                    <select 
+                                        name="status" 
+                                        class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all appearance-none"
+                                        required
+                                    >
+                                        <option value="active" {{ old('status', 'active') === 'active' ? 'selected' : '' }}>Active</option>
+                                        <option value="inactive" {{ old('status') === 'inactive' ? 'selected' : '' }}>Inactive</option>
+                                    </select>
+                                    <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1.5">Valid From:</label>
+                                    <input 
+                                        type="date" 
+                                        name="valid_from" 
+                                        value="{{ old('valid_from') }}"
+                                        class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                                    >
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1.5">Valid To:</label>
+                                    <input 
+                                        type="date" 
+                                        name="valid_to" 
+                                        value="{{ old('valid_to') }}"
+                                        class="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="pt-4 border-t border-gray-100">
+                            <label class="flex items-center gap-3 cursor-pointer group">
+                                <input 
+                                    type="checkbox" 
+                                    name="clear_existing" 
+                                    value="1"
+                                    class="w-5 h-5 rounded border-gray-300 text-orange-600 focus:ring-orange-500 focus:ring-offset-0"
+                                >
+                                <span class="text-sm text-gray-600 group-hover:text-gray-900 transition-colors">Xóa giá workshop cũ trước khi set giá mới (cho các variants được chọn)</span>
+                            </label>
                         </div>
                     </div>
                 </div>
-
-                <!-- Options -->
-                <div class="mb-6">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input 
-                            type="checkbox" 
-                            name="clear_existing" 
-                            value="1"
-                            class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                <div class="p-6 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div class="flex-1"></div>
+                    <div class="flex gap-3 w-full sm:w-auto">
+                        <a href="{{ route('admin.products.show', $product) }}" class="flex-1 sm:flex-none px-6 py-2.5 rounded-lg font-semibold border border-gray-200 hover:bg-white transition-all text-center">
+                            Hủy
+                        </a>
+                        <button 
+                            type="submit"
+                            class="flex-1 sm:flex-none px-8 py-2.5 rounded-lg font-semibold bg-orange-600 text-white hover:bg-orange-700 shadow-lg shadow-orange-600/20 transition-all transform active:scale-[0.98]"
                         >
-                        <span class="text-sm text-gray-700">Xóa giá workshop cũ trước khi set giá mới (cho các variants được chọn)</span>
-                    </label>
+                            Apply Workshop Price
+                        </button>
+                    </div>
                 </div>
-            </div>
-
-            <div class="px-6 py-4 border-t bg-gray-50 flex items-center justify-end gap-3" style="border-color: #E5E7EB;">
-                <a href="{{ route('admin.products.show', $product) }}" class="px-4 py-2 rounded-lg text-sm font-medium transition-all border" style="color: #374151; border-color: #D1D5DB;" onmouseover="this.style.backgroundColor='#F3F4F6';" onmouseout="this.style.backgroundColor='transparent';">
-                    Hủy
-                </a>
-                <button 
-                    type="submit" 
-                    class="px-6 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-sm"
-                    style="background-color: #10B981;"
-                    onmouseover="this.style.backgroundColor='#059669';"
-                    onmouseout="this.style.backgroundColor='#10B981';"
-                >
-                    Áp dụng giá workshop
-                </button>
-            </div>
-        </form>
-    </div>
+            </section>
+        </div>
+    </form>
 </div>
 
 @php
@@ -276,6 +314,21 @@
 
 <script>
     const variantsData = @json($variantsForJs ?? []);
+
+    // Update chip styling on checkbox change
+    document.addEventListener('DOMContentLoaded', function() {
+        const checkboxes = document.querySelectorAll('.chip-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const label = document.querySelector(`label[for="${this.id}"]`);
+                if (this.checked) {
+                    label.classList.add('border-orange-500', 'bg-orange-50');
+                } else {
+                    label.classList.remove('border-orange-500', 'bg-orange-50');
+                }
+            });
+        });
+    });
 
     function updateVariantPreview() {
         const form = document.querySelector('form');
@@ -350,33 +403,45 @@
     }
 
     function selectAllAttributes() {
-        const checkboxes = document.querySelectorAll('.attribute-filter');
-        checkboxes.forEach(checkbox => {
+        document.querySelectorAll('.attribute-filter').forEach(checkbox => {
             checkbox.checked = true;
+            const label = document.querySelector(`label[for="${checkbox.id}"]`);
+            if (label) {
+                label.classList.add('border-orange-500', 'bg-orange-50');
+            }
         });
         updateVariantPreview();
     }
 
     function deselectAllAttributes() {
-        const checkboxes = document.querySelectorAll('.attribute-filter');
-        checkboxes.forEach(checkbox => {
+        document.querySelectorAll('.attribute-filter').forEach(checkbox => {
             checkbox.checked = false;
+            const label = document.querySelector(`label[for="${checkbox.id}"]`);
+            if (label) {
+                label.classList.remove('border-orange-500', 'bg-orange-50');
+            }
         });
         updateVariantPreview();
     }
 
     function selectAttributeGroup(attrName) {
-        const checkboxes = document.querySelectorAll(`.attribute-filter[data-attr-name="${attrName}"]`);
-        checkboxes.forEach(checkbox => {
+        document.querySelectorAll(`.attribute-filter[data-attr-name="${attrName}"]`).forEach(checkbox => {
             checkbox.checked = true;
+            const label = document.querySelector(`label[for="${checkbox.id}"]`);
+            if (label) {
+                label.classList.add('border-orange-500', 'bg-orange-50');
+            }
         });
         updateVariantPreview();
     }
 
     function deselectAttributeGroup(attrName) {
-        const checkboxes = document.querySelectorAll(`.attribute-filter[data-attr-name="${attrName}"]`);
-        checkboxes.forEach(checkbox => {
+        document.querySelectorAll(`.attribute-filter[data-attr-name="${attrName}"]`).forEach(checkbox => {
             checkbox.checked = false;
+            const label = document.querySelector(`label[for="${checkbox.id}"]`);
+            if (label) {
+                label.classList.remove('border-orange-500', 'bg-orange-50');
+            }
         });
         updateVariantPreview();
     }
@@ -391,4 +456,3 @@
 @php
     $activeMenu = 'products';
 @endphp
-

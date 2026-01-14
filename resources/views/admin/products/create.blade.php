@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin-dashboard')
 
 @section('title', 'Create Product - ' . config('app.name', 'Laravel'))
 
@@ -58,6 +58,48 @@
                         onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
                         onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
                     >
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="sku_template" class="block text-sm font-semibold mb-2" style="color: #111827;">
+                            Template SKU nội bộ (tùy chọn)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="sku_template" 
+                            name="sku_template" 
+                            value="{{ old('sku_template') }}"
+                            placeholder="VD: T004-{COLOR_CODE}-{SIZE}-US"
+                            class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all font-mono text-sm"
+                            style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                            onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
+                            onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
+                        >
+                        <p class="text-xs mt-1" style="color: #6B7280;">
+                            Hỗ trợ biến: <code>{COLOR_CODE}</code>, <code>{COLOR}</code>, <code>{SIZE}</code>, <code>{MARKET_CODE}</code>, <code>{WORKSHOP_CODE}</code>.
+                            Bỏ trống để dùng cách sinh SKU cũ.
+                        </p>
+                    </div>
+                    <div>
+                        <label for="workshop_sku_template" class="block text-sm font-semibold mb-2" style="color: #111827;">
+                            Template Workshop SKU (tùy chọn)
+                        </label>
+                        <input 
+                            type="text" 
+                            id="workshop_sku_template" 
+                            name="workshop_sku_template" 
+                            value="{{ old('workshop_sku_template') }}"
+                            placeholder="VD: COMFORT {SIZE}/ {COLOR_CODE}"
+                            class="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all font-mono text-sm"
+                            style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                            onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
+                            onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
+                        >
+                        <p class="text-xs mt-1" style="color: #6B7280;">
+                            Nếu để trống sẽ dùng workshop code mặc định. Biến hỗ trợ giống trên.
+                        </p>
+                    </div>
                 </div>
 
                 <div>
