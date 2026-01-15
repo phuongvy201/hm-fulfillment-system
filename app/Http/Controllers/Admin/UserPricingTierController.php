@@ -37,7 +37,11 @@ class UserPricingTierController extends Controller
             });
         }
 
-        $users = $query->orderBy('name')->paginate(20);
+        // Get per page value
+        $perPage = $request->get('per_page', 20);
+        $perPage = in_array($perPage, [12, 25, 50, 100]) ? $perPage : 20;
+
+        $users = $query->orderBy('name')->paginate($perPage)->withQueryString();
         $tiers = PricingTier::where('status', 'active')->orderBy('priority')->get();
 
         return view('admin.user-pricing-tiers.index', compact('users', 'tiers'));

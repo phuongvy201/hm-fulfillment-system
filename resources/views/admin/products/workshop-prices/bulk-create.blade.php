@@ -174,6 +174,9 @@
                             • Mỗi variant có 2 loại giá:<br>
                             &nbsp;&nbsp;- <strong>Giá ship by Seller:</strong> Giá workshop khi ship by seller<br>
                             &nbsp;&nbsp;- <strong>Giá ship by TikTok:</strong> Giá workshop khi ship by tiktok<br>
+                            • Mỗi loại shipping có 2 mức giá:<br>
+                            &nbsp;&nbsp;- <strong>Item 1:</strong> Giá cho sản phẩm đầu tiên<br>
+                            &nbsp;&nbsp;- <strong>Item 2+:</strong> Giá cho các sản phẩm từ thứ 2 trở đi (tùy chọn)<br>
                             • Currency sẽ tự động lấy từ market của workshop ({{ $currency }})
                         </p>
                     </div>
@@ -185,20 +188,37 @@
                                 <span class="material-symbols-outlined text-blue-500">local_shipping</span>
                                 Ship by Seller
                             </div>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1.5">Base Price</label>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{{ $currency === 'USD' ? '$' : ($currency === 'EUR' ? '€' : ($currency === 'VND' ? '₫' : $currency . ' ')) }}</span>
-                                    <input 
-                                        type="number" 
-                                        name="prices[seller][base_price]" 
-                                        step="0.01" 
-                                        min="0"
-                                        placeholder="0.00"
-                                        value="{{ old('prices.seller.base_price') }}"
-                                        class="w-full bg-white border border-gray-200 rounded-lg py-2.5 pl-7 pr-4 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
-                                    >
-                                    <input type="hidden" name="prices[seller][shipping_type]" value="seller">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1.5">Item 1 (Base Price)</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{{ $currency === 'USD' ? '$' : ($currency === 'EUR' ? '€' : ($currency === 'VND' ? '₫' : $currency . ' ')) }}</span>
+                                        <input 
+                                            type="number" 
+                                            name="prices[seller][base_price]" 
+                                            step="0.01" 
+                                            min="0"
+                                            placeholder="0.00"
+                                            value="{{ old('prices.seller.base_price') }}"
+                                            class="w-full bg-white border border-gray-200 rounded-lg py-2.5 pl-7 pr-4 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                                        >
+                                        <input type="hidden" name="prices[seller][shipping_type]" value="seller">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1.5">Item 2+ (Additional Price)</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{{ $currency === 'USD' ? '$' : ($currency === 'EUR' ? '€' : ($currency === 'VND' ? '₫' : $currency . ' ')) }}</span>
+                                        <input 
+                                            type="number" 
+                                            name="prices[seller][additional_item_price]" 
+                                            step="0.01" 
+                                            min="0"
+                                            placeholder="0.00"
+                                            value="{{ old('prices.seller.additional_item_price') }}"
+                                            class="w-full bg-white border border-gray-200 rounded-lg py-2.5 pl-7 pr-4 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                                        >
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -211,20 +231,37 @@
                                 <span class="material-symbols-outlined text-gray-900">bolt</span>
                                 Ship by TikTok
                             </div>
-                            <div>
-                                <label class="block text-xs text-gray-500 mb-1.5">Base Price</label>
-                                <div class="relative">
-                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{{ $currency === 'USD' ? '$' : ($currency === 'EUR' ? '€' : ($currency === 'VND' ? '₫' : $currency . ' ')) }}</span>
-                                    <input 
-                                        type="number" 
-                                        name="prices[tiktok][base_price]" 
-                                        step="0.01" 
-                                        min="0"
-                                        placeholder="0.00"
-                                        value="{{ old('prices.tiktok.base_price') }}"
-                                        class="w-full bg-white border border-gray-200 rounded-lg py-2.5 pl-7 pr-4 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
-                                    >
-                                    <input type="hidden" name="prices[tiktok][shipping_type]" value="tiktok">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1.5">Item 1 (Base Price)</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{{ $currency === 'USD' ? '$' : ($currency === 'EUR' ? '€' : ($currency === 'VND' ? '₫' : $currency . ' ')) }}</span>
+                                        <input 
+                                            type="number" 
+                                            name="prices[tiktok][base_price]" 
+                                            step="0.01" 
+                                            min="0"
+                                            placeholder="0.00"
+                                            value="{{ old('prices.tiktok.base_price') }}"
+                                            class="w-full bg-white border border-gray-200 rounded-lg py-2.5 pl-7 pr-4 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                                        >
+                                        <input type="hidden" name="prices[tiktok][shipping_type]" value="tiktok">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1.5">Item 2+ (Additional Price)</label>
+                                    <div class="relative">
+                                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{{ $currency === 'USD' ? '$' : ($currency === 'EUR' ? '€' : ($currency === 'VND' ? '₫' : $currency . ' ')) }}</span>
+                                        <input 
+                                            type="number" 
+                                            name="prices[tiktok][additional_item_price]" 
+                                            step="0.01" 
+                                            min="0"
+                                            placeholder="0.00"
+                                            value="{{ old('prices.tiktok.additional_item_price') }}"
+                                            class="w-full bg-white border border-gray-200 rounded-lg py-2.5 pl-7 pr-4 focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none transition-all"
+                                        >
+                                    </div>
                                 </div>
                             </div>
                         </div>

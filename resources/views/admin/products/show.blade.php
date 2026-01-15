@@ -75,7 +75,7 @@
                 @if($product->description)
                     <p class="text-gray-600 mb-4">{{ $product->description }}</p>
                 @endif
-                <div class="flex items-center gap-6 text-sm text-gray-500">
+                <div class="flex items-center gap-6 text-sm text-gray-500 mb-4">
                     <div class="flex items-center gap-1.5">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -89,6 +89,32 @@
                         <span>{{ $product->variants->count() }} {{ $product->variants->count() === 1 ? 'variant' : 'variants' }}</span>
                     </div>
                 </div>
+                
+                <!-- Printing Prices -->
+                @php
+                    $productPrintingPrices = $product->printingPrices ?? collect();
+                    $sharedPrintingPrices = $productPrintingPrices->whereNull('variant_id');
+                @endphp
+                @if($sharedPrintingPrices->count() > 0)
+                    <div class="mt-4 pt-4 border-t" style="border-color: #E5E7EB;">
+                        <h3 class="text-sm font-semibold mb-2" style="color: #111827;">Printing Prices (Shared)</h3>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach($sharedPrintingPrices->groupBy('market_id') as $marketId => $printingPrices)
+                                @php
+                                    $market = $printingPrices->first()->market ?? null;
+                                @endphp
+                                @if($market)
+                                    @php
+                                        $additionalPrice = $printingPrices->where('sides', 2)->first();
+                                    @endphp
+                                    <span class="px-2 py-1 text-xs font-medium rounded" style="background-color: #FEF3C7; color: #92400E; border: 1px solid #FDE68A;">
+                                        {{ $market->code }}: {{ $additionalPrice ? number_format($additionalPrice->price ?? 0, 2) . ' ' . $market->currency . '/mặt' : 'N/A' }}
+                                    </span>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
     </div>
@@ -129,14 +155,14 @@
                                 Bulk Set Workshop Prices
                             </a>
                             @endif
-                            <div class="border-t border-gray-200 my-1"></div>
-                            <a href="{{ route('admin.products.variants.create', $product) }}" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-                                <span class="material-symbols-outlined text-base">add</span>
-                                Add Single Variant
-                            </a>
                         </div>
                     </div>
                     @endif
+                    <!-- Add Single Variant Button -->
+                    <a href="{{ route('admin.products.variants.create', $product) }}" class="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-all font-semibold text-sm">
+                        <span class="material-symbols-outlined text-base">add</span>
+                        Add Single Variant
+                    </a>
                     <!-- Primary Action Button -->
                     <a href="{{ route('admin.products.variants.bulk-create', $product) }}" class="flex items-center gap-2 px-5 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all font-bold text-sm shadow-sm shadow-orange-500/20">
                         <span class="material-symbols-outlined text-lg">add</span>
@@ -295,7 +321,6 @@
                         <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Attributes</th>
                         <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Pricing ($)</th>
                         <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Workshop Price</th>
-                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Printing Price</th>
                         <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
                     </tr>
                 </thead>
@@ -304,10 +329,7 @@
                     @php
                         $variantPrices = $variant->tierPrices->groupBy('pricing_tier_id');
                         $variantUserPrices = $variant->userCustomPrices ?? collect();
-                        $productPrintingPrices = $product->printingPrices ?? collect();
                         $variantWorkshopPrices = $variant->workshopPrices ?? collect();
-                        $variantPrintingPrices = $variant->printingPrices ?? collect();
-                        $sharedPrintingPrices = $productPrintingPrices->whereNull('variant_id');
                         $workshopSkus = $variant->workshopSkus ?? collect();
                         $primaryImage = $product->images->where('is_primary', true)->first() ?? $product->images->first();
                         
@@ -386,53 +408,75 @@
                         <td class="px-6 py-5 align-top">
                             @if($variantPrices->count() > 0)
                                 @php
-                                    // Get first tier prices for display (usually default tier)
-                                    $firstTierPrices = $variantPrices->first();
-                                    $firstPrice = $firstTierPrices->first();
+                                    // Organize all prices by tier, market and shipping type
+                                    $allPricingData = [];
+                                    foreach($variantPrices as $tierId => $tierPrices) {
+                                        $firstPrice = $tierPrices->first();
                                     $tier = $firstPrice->pricingTier ?? null;
-                                    $pricesByShipping = $firstTierPrices->groupBy('shipping_type');
-                                    $pricesByMarket = $firstTierPrices->groupBy('market_id');
+                                        $pricesByMarket = $tierPrices->groupBy('market_id');
                                     
-                                    // Organize by market and shipping type
-                                    $pricingData = [];
                                     foreach($pricesByMarket as $marketId => $marketPrices) {
                                         $market = $marketPrices->first()->market ?? null;
                                         if($market) {
-                                            $pricingData[$market->code] = [
-                                                'market' => $market,
-                                                'seller' => $marketPrices->where('shipping_type', 'seller')->first(),
-                                                'tiktok' => $marketPrices->where('shipping_type', 'tiktok')->first(),
+                                                $sellerPrice = $marketPrices->where('shipping_type', 'seller')->first();
+                                                $tiktokPrice = $marketPrices->where('shipping_type', 'tiktok')->first();
+                                                
+                                                if($sellerPrice) {
+                                                    $allPricingData[] = [
+                                                        'tier' => ['id' => $tier?->id, 'name' => $tier?->name ?? 'Default'],
+                                                        'market' => ['id' => $market->id, 'name' => $market->name, 'code' => $market->code, 'currency' => $market->currency ?? 'USD'],
+                                                        'shipping_type' => 'seller',
+                                                        'base_price' => $sellerPrice->base_price,
+                                                        'additional_item_price' => $sellerPrice->additional_item_price,
+                                                    ];
+                                                }
+                                                
+                                                if($tiktokPrice) {
+                                                    $allPricingData[] = [
+                                                        'tier' => ['id' => $tier?->id, 'name' => $tier?->name ?? 'Default'],
+                                                        'market' => ['id' => $market->id, 'name' => $market->name, 'code' => $market->code, 'currency' => $market->currency ?? 'USD'],
+                                                        'shipping_type' => 'tiktok',
+                                                        'base_price' => $tiktokPrice->base_price,
+                                                        'additional_item_price' => $tiktokPrice->additional_item_price,
                                             ];
                                         }
                                     }
+                                        }
+                                    }
+                                    
+                                    // Get first 2 items for preview
+                                    $previewPrices = array_slice($allPricingData, 0, 2);
+                                    $hasMore = count($allPricingData) > 2;
                                 @endphp
-                                @if(count($pricingData) > 0)
-                                    <div class="grid grid-cols-2 gap-x-8 gap-y-3">
-                                        @foreach($pricingData as $marketCode => $data)
-                                            @if($data['seller'])
-                                                <div class="flex flex-col gap-1">
-                                                    <span class="text-[10px] font-bold text-gray-400 uppercase">{{ $data['market']->code }} (Seller)</span>
+                                @if(count($allPricingData) > 0)
+                                    <div class="space-y-1.5">
+                                        @foreach($previewPrices as $priceItem)
                                                     <div class="flex items-baseline gap-2">
-                                                        <span class="text-xs text-blue-600 font-semibold">Item 1: <span class="text-gray-900 font-bold">{{ number_format($data['seller']->base_price, 2) }}</span></span>
-                                                        @if($data['seller']->additional_item_price)
-                                                            <span class="text-xs text-blue-600 font-semibold">Item 2+: <span class="text-gray-900 font-bold">{{ number_format($data['seller']->additional_item_price, 2) }}</span></span>
+                                                <span class="text-[10px] font-bold text-gray-400 uppercase">{{ $priceItem['market']['code'] }} ({{ ucfirst($priceItem['shipping_type']) }}):</span>
+                                                <span class="text-xs text-blue-600 font-semibold">Item 1: <span class="text-gray-900 font-bold">{{ number_format($priceItem['base_price'], 2) }}</span></span>
+                                                @if($priceItem['additional_item_price'])
+                                                    <span class="text-xs text-blue-600 font-semibold">2+: <span class="text-gray-900 font-bold">{{ number_format($priceItem['additional_item_price'], 2) }}</span></span>
                                                         @endif
                                                     </div>
-                                                </div>
-                                            @endif
-                                            @if($data['tiktok'])
-                                                <div class="flex flex-col gap-1">
-                                                    <span class="text-[10px] font-bold text-gray-400 uppercase">{{ $data['market']->code }} (TikTok)</span>
-                                                    <div class="flex items-baseline gap-2">
-                                                        <span class="text-xs text-blue-600 font-semibold">Item 1: <span class="text-gray-900 font-bold">{{ number_format($data['tiktok']->base_price, 2) }}</span></span>
-                                                        @if($data['tiktok']->additional_item_price)
-                                                            <span class="text-xs text-blue-600 font-semibold">Item 2+: <span class="text-gray-900 font-bold">{{ number_format($data['tiktok']->additional_item_price, 2) }}</span></span>
-                                                        @endif
-                                                    </div>
-                                                </div>
-                                            @endif
                                         @endforeach
-                                    </div>
+                                        @if($hasMore)
+                                            <button 
+                                                type="button"
+                                                onclick="showPricingModal({{ $variant->id }})"
+                                                class="text-xs text-orange-600 hover:text-orange-700 font-semibold underline mt-1"
+                                            >
+                                                See more ({{ count($allPricingData) - 2 }} more)
+                                            </button>
+                                                        @endif
+                                                    </div>
+                                    
+                                    <!-- Store full pricing data for modal -->
+                                    <script>
+                                        if (typeof variantPricingData === 'undefined') {
+                                            variantPricingData = {};
+                                        }
+                                        variantPricingData[{{ $variant->id }}] = @json($allPricingData);
+                                    </script>
                                 @else
                                     <span class="text-xs text-gray-400">Chưa có giá</span>
                                 @endif
@@ -482,44 +526,6 @@
                                 <span class="text-xs text-gray-400">-</span>
                             @endif
                         </td>
-                        <td class="px-6 py-5 align-top">
-                            @if($sharedPrintingPrices->count() > 0 || $variantPrintingPrices->count() > 0)
-                                <div class="space-y-1">
-                                    @if($sharedPrintingPrices->count() > 0)
-                                        @foreach($sharedPrintingPrices->groupBy('market_id') as $marketId => $printingPrices)
-                                            @php
-                                                $market = $printingPrices->first()->market ?? null;
-                                            @endphp
-                                            @if($market)
-                                                @php
-                                                    $additionalPrice = $printingPrices->where('sides', 2)->first();
-                                                @endphp
-                                                <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-yellow-50 text-yellow-700 border border-yellow-100">
-                                                    {{ $market->code }} (Chung): {{ $additionalPrice ? number_format($additionalPrice->price ?? 0, 2) . ' ' . $market->currency . '/mặt' : 'N/A' }}
-                                                </span>
-                                            @endif
-                                        @endforeach
-                                    @endif
-                                    @if($variantPrintingPrices->count() > 0)
-                                        @foreach($variantPrintingPrices->groupBy('market_id') as $marketId => $printingPrices)
-                                            @php
-                                                $market = $printingPrices->first()->market ?? null;
-                                            @endphp
-                                            @if($market)
-                                                @php
-                                                    $additionalPrice = $printingPrices->where('sides', 2)->first();
-                                                @endphp
-                                                <span class="px-1.5 py-0.5 text-xs font-medium rounded bg-yellow-100 text-yellow-800 border border-yellow-200">
-                                                    {{ $market->code }} (Riêng): {{ $additionalPrice ? number_format($additionalPrice->price ?? 0, 2) . ' ' . $market->currency . '/mặt' : 'N/A' }}
-                                                </span>
-                                            @endif
-                                        @endforeach
-                                    @endif
-                                </div>
-                            @else
-                                <span class="text-xs text-gray-400">-</span>
-                            @endif
-                        </td>
                         <td class="px-6 py-5 align-top text-right">
                             <div class="flex justify-end items-center gap-1">
                                 <a href="{{ route('admin.products.variants.prices.create', [$product, $variant]) }}" class="p-2 rounded-lg text-gray-400 hover:bg-orange-50 hover:text-orange-600 transition-colors" title="Set Price">
@@ -548,7 +554,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="px-6 py-12 text-center">
+                        <td colspan="6" class="px-6 py-12 text-center">
                             <svg class="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
                             </svg>
@@ -875,6 +881,146 @@
         document.getElementById('bulkDeleteVariantIds').value = JSON.stringify(variantIds);
         document.getElementById('bulkDeleteForm').submit();
     }
+</script>
+
+<!-- Pricing Modal -->
+<div id="pricingModal" class="hidden fixed inset-0 z-50 overflow-y-auto" style="background-color: rgba(0, 0, 0, 0.5);">
+    <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto" style="border: 1px solid #E2E8F0;">
+            <!-- Modal Header -->
+            <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between" style="border-color: #E2E8F0;">
+                <div>
+                    <h3 class="text-xl font-bold" style="color: #0F172A;">Pricing Details</h3>
+                    <p class="text-sm mt-1" style="color: #64748B;" id="modalVariantName"></p>
+                </div>
+                <button 
+                    type="button"
+                    onclick="closePricingModal()"
+                    class="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                    style="color: #64748B;"
+                >
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div class="p-6">
+                <div id="modalPricingContent" class="space-y-6">
+                    <!-- Content will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showPricingModal(variantId) {
+        const pricingData = variantPricingData[variantId];
+        if (!pricingData || pricingData.length === 0) {
+            alert('No pricing data available');
+            return;
+        }
+        
+        const modal = document.getElementById('pricingModal');
+        const content = document.getElementById('modalPricingContent');
+        const variantName = document.getElementById('modalVariantName');
+        
+        // Get variant name
+        const variantRow = document.querySelector(`input.variant-checkbox[value="${variantId}"]`)?.closest('tr');
+        const variantNameText = variantRow?.querySelector('.text-sm.font-bold')?.textContent || 'Variant';
+        variantName.textContent = variantNameText;
+        
+        // Build pricing content
+        let html = '';
+        
+        // Group by tier, then by market
+        const byTier = {};
+        pricingData.forEach(item => {
+            const tierName = item.tier?.name || 'Default Tier';
+            if (!byTier[tierName]) {
+                byTier[tierName] = {};
+            }
+            const marketKey = item.market.code;
+            if (!byTier[tierName][marketKey]) {
+                byTier[tierName][marketKey] = {
+                    market: item.market,
+                    seller: null,
+                    tiktok: null
+                };
+            }
+            if (item.shipping_type === 'seller') {
+                byTier[tierName][marketKey].seller = item;
+            } else if (item.shipping_type === 'tiktok') {
+                byTier[tierName][marketKey].tiktok = item;
+            }
+        });
+        
+        Object.keys(byTier).forEach(tierName => {
+            html += `<div class="border rounded-lg p-4 mb-4" style="border-color: #E2E8F0;">`;
+            html += `<h4 class="text-sm font-bold mb-3" style="color: #0F172A;">${tierName}</h4>`;
+            html += `<div class="space-y-3">`;
+            
+            Object.values(byTier[tierName]).forEach(marketData => {
+                html += `<div class="bg-gray-50 rounded-lg p-3" style="background-color: #F8FAFC;">`;
+                html += `<div class="text-xs font-semibold mb-2" style="color: #475569;">${marketData.market.name} (${marketData.market.code})</div>`;
+                
+                if (marketData.seller) {
+                    html += `<div class="flex items-center justify-between py-1.5 border-b" style="border-color: #E2E8F0;">`;
+                    html += `<span class="text-sm" style="color: #64748B;">Seller Shipping:</span>`;
+                    html += `<div class="flex items-center gap-3">`;
+                    html += `<span class="text-sm font-semibold" style="color: #0F172A;">Item 1: <span class="font-bold" style="color: #F7961D;">${parseFloat(marketData.seller.base_price).toFixed(2)} ${marketData.market.currency || 'USD'}</span></span>`;
+                    if (marketData.seller.additional_item_price) {
+                        html += `<span class="text-sm font-semibold" style="color: #0F172A;">Item 2+: <span class="font-bold" style="color: #F7961D;">${parseFloat(marketData.seller.additional_item_price).toFixed(2)} ${marketData.market.currency || 'USD'}</span></span>`;
+                    }
+                    html += `</div>`;
+                    html += `</div>`;
+                }
+                
+                if (marketData.tiktok) {
+                    html += `<div class="flex items-center justify-between py-1.5">`;
+                    html += `<span class="text-sm" style="color: #64748B;">TikTok Shipping:</span>`;
+                    html += `<div class="flex items-center gap-3">`;
+                    html += `<span class="text-sm font-semibold" style="color: #0F172A;">Item 1: <span class="font-bold" style="color: #F7961D;">${parseFloat(marketData.tiktok.base_price).toFixed(2)} ${marketData.market.currency || 'USD'}</span></span>`;
+                    if (marketData.tiktok.additional_item_price) {
+                        html += `<span class="text-sm font-semibold" style="color: #0F172A;">Item 2+: <span class="font-bold" style="color: #F7961D;">${parseFloat(marketData.tiktok.additional_item_price).toFixed(2)} ${marketData.market.currency || 'USD'}</span></span>`;
+                    }
+                    html += `</div>`;
+                    html += `</div>`;
+                }
+                
+                html += `</div>`;
+            });
+            
+            html += `</div>`;
+            html += `</div>`;
+        });
+        
+        content.innerHTML = html;
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+    
+    function closePricingModal() {
+        const modal = document.getElementById('pricingModal');
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+    
+    // Close modal when clicking outside
+    document.getElementById('pricingModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closePricingModal();
+        }
+    });
+    
+    // Close modal with Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closePricingModal();
+        }
+    });
 </script>
 @endsection
 

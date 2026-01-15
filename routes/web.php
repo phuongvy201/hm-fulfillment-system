@@ -155,4 +155,7 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('admin')->name('admin.')
     Route::post('import/user-prices', [\App\Http\Controllers\Admin\ImportController::class, 'importUserPrices'])->name('import.user-prices');
     Route::post('import/team-prices', [\App\Http\Controllers\Admin\ImportController::class, 'importTeamPrices'])->name('import.team-prices');
     Route::get('import/sample/{type}', [\App\Http\Controllers\Admin\ImportController::class, 'downloadSample'])->name('import.sample');
+
+    // Currency & Exchange Rates Management
+    Route::resource('currencies', \App\Http\Controllers\Admin\CurrencyController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
 });

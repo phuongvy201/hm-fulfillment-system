@@ -143,7 +143,7 @@
                 <div class="grid grid-cols-2 lg:flex lg:items-center gap-x-8 gap-y-4 flex-[1.5]">
                     <div class="flex flex-col">
                         <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Amount</span>
-                        <span class="text-xl font-bold text-gray-900">
+                        <span class="text-m font-bold text-gray-900">
                             @if($request->currency === 'USD')$@elseif($request->currency === 'EUR')€@elseif($request->currency === 'VND')₫@else{{ $request->currency }} @endif
                             {{ number_format($request->amount, 2) }}
                             <span class="text-sm font-medium text-gray-500">{{ $request->currency }}</span>
@@ -156,7 +156,7 @@
                                 @if($request->payment_method === 'bank_transfer')account_balance
                                 @elseif($request->payment_method === 'credit_card')credit_card
                                 @elseif($request->payment_method === 'lianpay' || $request->payment_method === 'pingpong' || $request->payment_method === 'worldfirst' || $request->payment_method === 'payoneer')payments
-                                @elseaccount_balance
+                                @else account_balance
                                 @endif
                             </span>
                             {{ ucfirst(str_replace('_', ' ', $request->payment_method)) }}
@@ -178,13 +178,6 @@
                         </div>
                     </div>
                     @endif
-                    <div class="flex flex-col">
-                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Timestamp</span>
-                        <span class="text-sm text-gray-600 flex items-center gap-1">
-                            <span class="material-symbols-outlined text-base">calendar_today</span>
-                            {{ $request->created_at->format('d/m/Y H:i') }}
-                        </span>
-                    </div>
                 </div>
                 <div class="flex items-center gap-2 lg:border-l lg:pl-6 border-gray-200">
                     @if($request->status === 'pending')
@@ -226,7 +219,7 @@
             </div>
             @if($request->paymentMethod && ($request->paymentMethod->account_number || $request->paymentMethod->account_holder))
             <div class="px-5 py-3 bg-gray-50 border-t border-gray-100">
-                <div class="flex items-center gap-4 text-xs font-medium text-gray-500">
+                <div class="flex flex-wrap items-center gap-4 text-xs font-medium text-gray-500">
                     <span class="uppercase tracking-widest text-[10px] font-bold">Payment Details:</span>
                     @if($request->paymentMethod->account_number)
                         <span>Account: {{ $request->paymentMethod->account_number }}</span>
@@ -235,6 +228,20 @@
                         <span class="text-gray-300">|</span>
                         <span>Holder: {{ $request->paymentMethod->account_holder }}</span>
                     @endif
+                    <span class="text-gray-300">|</span>
+                    <span class="flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base">calendar_today</span>
+                        {{ $request->created_at->format('d/m/Y H:i') }}
+                    </span>
+                </div>
+            </div>
+            @else
+            <div class="px-5 py-3 bg-gray-50 border-t border-gray-100">
+                <div class="flex items-center gap-4 text-xs font-medium text-gray-500">
+                    <span class="flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base">calendar_today</span>
+                        {{ $request->created_at->format('d/m/Y H:i') }}
+                    </span>
                 </div>
             </div>
             @endif

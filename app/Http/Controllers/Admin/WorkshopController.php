@@ -13,12 +13,30 @@ class WorkshopController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $workshops = Workshop::with(['market'])
-            ->withCount(['skus', 'prices', 'products'])
-            ->latest()
-            ->paginate(15);
+        $query = Workshop::with(['market'])
+            ->withCount(['skus', 'prices', 'products']);
+
+        // Filter by search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+
+        // Filter by status
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        // Get per page value
+        $perPage = $request->get('per_page', 15);
+        $perPage = in_array($perPage, [12, 25, 50, 100]) ? $perPage : 15;
+
+        $workshops = $query->latest()->paginate($perPage)->withQueryString();
 
         return view('admin.workshops.index', compact('workshops'));
     }

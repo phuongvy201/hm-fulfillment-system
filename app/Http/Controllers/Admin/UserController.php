@@ -39,7 +39,11 @@ class UserController extends Controller
             $query->where('team_id', $request->team_id);
         }
 
-        $users = $query->latest()->paginate(15)->withQueryString();
+        // Get per page value
+        $perPage = $request->get('per_page', 15);
+        $perPage = in_array($perPage, [12, 25, 50, 100]) ? $perPage : 15;
+
+        $users = $query->latest()->paginate($perPage)->withQueryString();
         $roles = Role::all();
         $teams = Team::all();
 

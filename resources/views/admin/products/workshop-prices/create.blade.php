@@ -53,56 +53,115 @@
                                 • Mỗi variant có 2 loại giá:<br>
                                 &nbsp;&nbsp;- <strong>Giá ship by Seller:</strong> Giá workshop khi ship by seller<br>
                                 &nbsp;&nbsp;- <strong>Giá ship by TikTok:</strong> Giá workshop khi ship by tiktok<br>
+                                • Mỗi loại shipping có 2 mức giá:<br>
+                                &nbsp;&nbsp;- <strong>Item 1:</strong> Giá cho sản phẩm đầu tiên<br>
+                                &nbsp;&nbsp;- <strong>Item 2+:</strong> Giá cho các sản phẩm từ thứ 2 trở đi (tùy chọn)<br>
                                 • Currency sẽ tự động lấy từ market của workshop ({{ $market->currency ?? 'USD' }})
                             </p>
                         </div>
                         
-                        <div class="space-y-4">
+                        <div class="space-y-6">
                             <!-- Giá ship by Seller -->
-                            <div>
-                                <label class="block text-xs font-medium mb-1" style="color: #6B7280;">Giá workshop ship by Seller ({{ $market->currency ?? 'USD' }}):</label>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm font-medium text-gray-600">{{ $market->currency_symbol ?? $market->currency ?? 'USD' }}</span>
-                                    <input 
-                                        type="number" 
-                                        name="prices[seller][base_price]" 
-                                        step="0.01"
-                                        min="0"
-                                        placeholder="0.00"
-                                        value="{{ old('prices.seller.base_price', $existingPrices['seller']->base_price ?? '') }}"
-                                        class="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 transition-all text-sm"
-                                        style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
-                                        onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 2px rgba(37, 99, 235, 0.1)';"
-                                        onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
-                                    >
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-2 text-gray-700 font-medium">
+                                    <span class="material-symbols-outlined text-blue-500">local_shipping</span>
+                                    Ship by Seller
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1.5">Item 1 (Base Price)</label>
+                                        <div class="relative">
+                                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{{ $market->currency_symbol ?? $market->currency ?? 'USD' }}</span>
+                                            <input 
+                                                type="number" 
+                                                name="prices[seller][base_price]" 
+                                                step="0.01"
+                                                min="0"
+                                                placeholder="0.00"
+                                                value="{{ old('prices.seller.base_price', $existingPrices['seller']->base_price ?? '') }}"
+                                                class="w-full px-3 py-2 pl-7 border rounded-lg focus:outline-none focus:ring-1 transition-all text-sm"
+                                                style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                                                onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 2px rgba(37, 99, 235, 0.1)';"
+                                                onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
+                                            >
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1.5">Item 2+ (Additional Price)</label>
+                                        <div class="relative">
+                                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{{ $market->currency_symbol ?? $market->currency ?? 'USD' }}</span>
+                                            <input 
+                                                type="number" 
+                                                name="prices[seller][additional_item_price]" 
+                                                step="0.01"
+                                                min="0"
+                                                placeholder="0.00"
+                                                value="{{ old('prices.seller.additional_item_price', $existingPrices['seller']->additional_item_price ?? '') }}"
+                                                class="w-full px-3 py-2 pl-7 border rounded-lg focus:outline-none focus:ring-1 transition-all text-sm"
+                                                style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                                                onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 2px rgba(37, 99, 235, 0.1)';"
+                                                onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
+                                            >
+                                        </div>
+                                    </div>
                                 </div>
                                 @if(isset($existingPrices['seller']))
-                                <div class="text-xs text-green-600 mt-1">✓ Saved</div>
+                                <div class="text-xs text-green-600">✓ Saved</div>
                                 @endif
                             </div>
                             
+                            <div class="h-px bg-gray-100"></div>
+                            
                             <!-- Giá ship by TikTok -->
-                            <div>
-                                <label class="block text-xs font-medium mb-1" style="color: #6B7280;">Giá workshop ship by TikTok ({{ $market->currency ?? 'USD' }}):</label>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm font-medium text-gray-600">{{ $market->currency_symbol ?? $market->currency ?? 'USD' }}</span>
-                                    <input 
-                                        type="number" 
-                                        name="prices[tiktok][base_price]" 
-                                        step="0.01"
-                                        min="0"
-                                        placeholder="0.00"
-                                        value="{{ old('prices.tiktok.base_price', $existingPrices['tiktok']->base_price ?? '') }}"
-                                        class="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 transition-all text-sm"
-                                        style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
-                                        onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 2px rgba(37, 99, 235, 0.1)';"
-                                        onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
-                                    >
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-2 text-gray-700 font-medium">
+                                    <span class="material-symbols-outlined text-gray-900">bolt</span>
+                                    Ship by TikTok
+                                </div>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1.5">Item 1 (Base Price)</label>
+                                        <div class="relative">
+                                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{{ $market->currency_symbol ?? $market->currency ?? 'USD' }}</span>
+                                            <input 
+                                                type="number" 
+                                                name="prices[tiktok][base_price]" 
+                                                step="0.01"
+                                                min="0"
+                                                placeholder="0.00"
+                                                value="{{ old('prices.tiktok.base_price', $existingPrices['tiktok']->base_price ?? '') }}"
+                                                class="w-full px-3 py-2 pl-7 border rounded-lg focus:outline-none focus:ring-1 transition-all text-sm"
+                                                style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                                                onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 2px rgba(37, 99, 235, 0.1)';"
+                                                onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
+                                            >
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1.5">Item 2+ (Additional Price)</label>
+                                        <div class="relative">
+                                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{{ $market->currency_symbol ?? $market->currency ?? 'USD' }}</span>
+                                            <input 
+                                                type="number" 
+                                                name="prices[tiktok][additional_item_price]" 
+                                                step="0.01"
+                                                min="0"
+                                                placeholder="0.00"
+                                                value="{{ old('prices.tiktok.additional_item_price', $existingPrices['tiktok']->additional_item_price ?? '') }}"
+                                                class="w-full px-3 py-2 pl-7 border rounded-lg focus:outline-none focus:ring-1 transition-all text-sm"
+                                                style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
+                                                onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 2px rgba(37, 99, 235, 0.1)';"
+                                                onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
+                                            >
+                                        </div>
+                                    </div>
                                 </div>
                                 @if(isset($existingPrices['tiktok']))
-                                <div class="text-xs text-green-600 mt-1">✓ Saved</div>
+                                <div class="text-xs text-green-600">✓ Saved</div>
                                 @endif
                             </div>
+                            
+                            <div class="h-px bg-gray-100"></div>
                             
                             <div>
                                 <label class="block text-xs font-medium mb-1" style="color: #6B7280;">Status:</label>

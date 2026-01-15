@@ -12,6 +12,7 @@ class WorkshopPrice extends Model
         'product_id',
         'variant_id',
         'base_price',
+        'additional_item_price',
         'currency',
         'status',
         'shipping_type',
@@ -21,6 +22,7 @@ class WorkshopPrice extends Model
 
     protected $casts = [
         'base_price' => 'decimal:2',
+        'additional_item_price' => 'decimal:2',
         'valid_from' => 'datetime',
         'valid_to' => 'datetime',
     ];

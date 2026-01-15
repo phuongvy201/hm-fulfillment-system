@@ -27,14 +27,16 @@
                 </a>
             </li>
             
+            @if(auth()->user()->isSuperAdmin())
             <li>
-                <a href="#" class="menu-item flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
+                <a href="{{ route('admin.orders.index') }}" class="menu-item {{ $activeMenu === 'orders' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                     </svg>
                     Orders
                 </a>
             </li>
+            @endif
 
             <!-- Finance Management -->
             @canAnyPermission(['top-up.view', 'top-up.create', 'credit.view', 'wallet.view'])
@@ -74,6 +76,17 @@
                 </a>
             </li>
             @endcanPermission
+
+            @if(auth()->user()->isSuperAdmin())
+            <li>
+                <a href="{{ route('admin.currencies.index') }}" class="menu-item {{ $activeMenu === 'currencies' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
+                    </svg>
+                    Currency & Exchange Rates
+                </a>
+            </li>
+            @endif
             @endcanAnyPermission
             <!-- Product Management -->
             @canAnyPermission(['products.view', 'markets.view', 'workshops.view'])

@@ -13,9 +13,22 @@ class TeamController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $teams = Team::withCount('users')->latest()->paginate(15);
+        $query = Team::withCount('users');
+
+        // Filter by search
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where('name', 'like', "%{$search}%");
+        }
+
+        // Get per page value
+        $perPage = $request->get('per_page', 15);
+        $perPage = in_array($perPage, [12, 25, 50, 100]) ? $perPage : 15;
+
+        $teams = $query->latest()->paginate($perPage)->withQueryString();
+        
         return view('admin.teams.index', compact('teams'));
     }
 

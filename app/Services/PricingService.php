@@ -57,20 +57,29 @@ class PricingService
     /**
      * Convert price from one currency to another.
      */
-    public function convertCurrency(float $amount, string $fromCurrency, string $toCurrency): float
+    public function convertCurrency(float $amount, string $fromCurrency, string $toCurrency, $date = null): float
     {
         if ($fromCurrency === $toCurrency) {
             return $amount;
         }
 
-        // Exchange rates (should be stored in database or fetched from API)
-        $rates = [
-            'USD' => ['GBP' => 0.79, 'VND' => 24500],
-            'GBP' => ['USD' => 1.27, 'VND' => 31000],
-            'VND' => ['USD' => 0.000041, 'GBP' => 0.000032],
-        ];
+        // Get exchange rate from database
+        $rate = \App\Models\ExchangeRate::getCurrentRate($fromCurrency, $toCurrency, $date);
 
-        return $amount * ($rates[$fromCurrency][$toCurrency] ?? 1);
+        if ($rate === null) {
+            // Fallback to hardcoded rates if no database rate found
+            // This ensures backward compatibility
+            $fallbackRates = [
+                'USD' => ['GBP' => 0.79, 'VND' => 24500, 'EUR' => 0.92],
+                'GBP' => ['USD' => 1.27, 'VND' => 31000, 'EUR' => 1.17],
+                'VND' => ['USD' => 0.000041, 'GBP' => 0.000032, 'EUR' => 0.000038],
+                'EUR' => ['USD' => 1.09, 'GBP' => 0.85, 'VND' => 26600],
+            ];
+
+            $rate = $fallbackRates[$fromCurrency][$toCurrency] ?? 1;
+        }
+
+        return $amount * $rate;
     }
 
     /**

@@ -71,9 +71,28 @@ class OrderController extends Controller
         $users = User::whereDoesntHave('role', function ($q) {
             $q->whereIn('slug', ['super-admin', 'it-admin']);
         })->orderBy('name')->get();
-        $workshops = Workshop::where('status', 'active')->get();
+        $workshops = Workshop::with('market')->where('status', 'active')->get();
+        $products = Product::where('status', 'active')
+            ->with(['variants' => function($q) {
+                $q->where('status', 'active')->with(['variantAttributes', 'workshopPrices']);
+            }, 'images' => function($q) {
+                $q->orderBy('sort_order')->orderBy('id');
+            }, 'workshop.market'])
+            ->orderBy('name')
+            ->get();
+        
+        // Append url attribute to images and display_name to variants
+        $products->each(function($product) {
+            $product->images->each(function($image) {
+                $image->append('url');
+            });
+            $product->variants->each(function($variant) {
+                $variant->append('display_name');
+            });
+        });
+        $markets = \App\Models\Market::where('status', 'active')->get();
 
-        return view('admin.orders.create', compact('users', 'workshops'));
+        return view('admin.orders.create', compact('users', 'workshops', 'products', 'markets'));
     }
 
     /**
@@ -83,57 +102,100 @@ class OrderController extends Controller
     {
         $validated = $request->validate([
             'user_id' => ['required', 'exists:users,id'],
+            'order_number' => ['nullable', 'string', 'max:255', 'unique:orders,order_number'],
+            'store_name' => ['nullable', 'string', 'max:255'],
+            'sales_channel' => ['nullable', 'string', 'in:shopify,etsy,amazon,tiktok'],
+            'shipping_method' => ['nullable', 'string', 'in:standard,express'],
             'workshop_id' => ['required', 'exists:workshops,id'],
+            'order_note' => ['nullable', 'string'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:products,id'],
             'items.*.variant_id' => ['nullable', 'exists:product_variants,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'items.*.price' => ['required', 'numeric', 'min:0'],
+            'items.*.product_title' => ['nullable', 'string', 'max:255'],
+            'items.*.designs' => ['required', 'array', 'min:1'],
+            'items.*.designs.*.url' => ['required', 'url'],
+            'items.*.designs.*.position' => ['required', 'string', 'max:255'],
+            'items.*.mockups' => ['required', 'array', 'min:1'],
+            'items.*.mockups.*.url' => ['required', 'url'],
+            'items.*.mockups.*.position' => ['required', 'string', 'max:255'],
             'shipping_address' => ['required', 'array'],
-            'shipping_address.name' => ['required', 'string'],
-            'shipping_address.address' => ['required', 'string'],
-            'shipping_address.city' => ['required', 'string'],
-            'shipping_address.state' => ['nullable', 'string'],
-            'shipping_address.postal_code' => ['required', 'string'],
-            'shipping_address.country' => ['required', 'string'],
-            'shipping_address.phone' => ['nullable', 'string'],
+            'shipping_address.name' => ['required', 'string', 'max:255'],
+            'shipping_address.email' => ['nullable', 'email', 'max:255'],
+            'shipping_address.phone' => ['nullable', 'string', 'max:255'],
+            'shipping_address.address' => ['required', 'string', 'max:500'],
+            'shipping_address.address2' => ['nullable', 'string', 'max:500'],
+            'shipping_address.city' => ['required', 'string', 'max:255'],
+            'shipping_address.state' => ['nullable', 'string', 'max:255'],
+            'shipping_address.postal_code' => ['required', 'string', 'max:50'],
+            'shipping_address.country' => ['required', 'string', 'size:2'],
             'billing_address' => ['nullable', 'array'],
-            'total_amount' => ['required', 'numeric', 'min:0'],
-            'currency' => ['required', 'string', 'size:3'],
+            'total_amount' => ['nullable', 'numeric', 'min:0'],
+            'currency' => ['nullable', 'string', 'size:3'],
             'notes' => ['nullable', 'string'],
             'auto_submit' => ['nullable', 'boolean'],
         ]);
 
         DB::beginTransaction();
         try {
+            // Generate order number if not provided
+            $orderNumber = $validated['order_number'] ?? Order::generateOrderNumber();
+
             // Enrich items with product and variant names
             $enrichedItems = [];
+            $totalAmount = 0;
+            
             foreach ($validated['items'] as $item) {
                 $product = Product::find($item['product_id']);
-                $variant = $item['variant_id'] ? ProductVariant::find($item['variant_id']) : null;
+                $variant = null;
+                $variantName = 'Default';
+                
+                if (!empty($item['variant_id'])) {
+                    $variant = ProductVariant::find($item['variant_id']);
+                    if ($variant) {
+                        $variantName = $variant->display_name ?? $variant->sku ?? 'Default';
+                    }
+                }
+                
+                // Calculate price (you might want to use PricingService here)
+                $price = 0; // Default, should be calculated based on product/variant pricing
                 
                 $enrichedItems[] = [
                     'product_id' => $item['product_id'],
                     'product_name' => $product->name ?? 'Unknown Product',
-                    'variant_id' => $item['variant_id'],
-                    'variant_name' => $variant ? ($variant->name ?? $variant->display_name ?? 'Default') : 'Default',
+                    'product_title' => $item['product_title'] ?? null,
+                    'variant_id' => $variant ? $variant->id : null,
+                    'variant_name' => $variantName,
                     'quantity' => $item['quantity'],
-                    'price' => $item['price'],
+                    'price' => $price,
+                    'designs' => $item['designs'] ?? [],
+                    'mockups' => $item['mockups'] ?? [],
                 ];
+                
+                $totalAmount += $price * $item['quantity'];
             }
 
+            // Get currency from workshop's market
+            $workshop = Workshop::with('market')->find($validated['workshop_id']);
+            $currency = $workshop->market->currency ?? 'USD';
+
             $order = Order::create([
-                'order_number' => Order::generateOrderNumber(),
+                'order_number' => $orderNumber,
                 'user_id' => $validated['user_id'],
                 'workshop_id' => $validated['workshop_id'],
                 'items' => $enrichedItems,
                 'shipping_address' => $validated['shipping_address'],
                 'billing_address' => $validated['billing_address'] ?? $validated['shipping_address'],
-                'total_amount' => $validated['total_amount'],
-                'currency' => $validated['currency'],
-                'notes' => $validated['notes'] ?? null,
+                'total_amount' => $validated['total_amount'] ?? $totalAmount,
+                'currency' => $validated['currency'] ?? $currency,
+                'notes' => $validated['order_note'] ?? $validated['notes'] ?? null,
                 'status' => 'pending',
                 'payment_status' => 'pending',
+                'api_request' => [
+                    'store_name' => $validated['store_name'] ?? null,
+                    'sales_channel' => $validated['sales_channel'] ?? null,
+                    'shipping_method' => $validated['shipping_method'] ?? null,
+                ],
             ]);
 
             // Auto submit to workshop if requested

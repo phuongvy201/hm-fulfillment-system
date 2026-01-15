@@ -10,154 +10,176 @@
 @section('header-subtitle', 'Manage all products in the system')
 
 @section('header-actions')
-<a href="{{ route('admin.products.create') }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-sm" style="background-color: #2563EB;" onmouseover="this.style.backgroundColor='#1D4ED8';" onmouseout="this.style.backgroundColor='#2563EB';">
-    + Add Product
+<a href="{{ route('admin.products.create') }}" class="bg-orange-500 hover:bg-orange-600 text-white px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2 transition-colors shadow-sm">
+    <span class="material-symbols-outlined">add</span>
+    Add Product
 </a>
-<a href="{{ route('admin.products.trashed') }}" class="px-4 py-2 rounded-lg text-sm font-semibold transition-all border" style="color: #F59E0B; border-color: #FEF3C7; background-color: #FFFBEB;" onmouseover="this.style.backgroundColor='#FEF3C7';" onmouseout="this.style.backgroundColor='#FFFBEB';">
-    <svg class="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-    </svg>
+<a href="{{ route('admin.products.trashed') }}" class="border border-gray-300 bg-white text-gray-700 px-5 py-2.5 rounded-lg font-semibold flex items-center gap-2 hover:bg-gray-50 transition-colors shadow-sm">
+    <span class="material-symbols-outlined">delete</span>
     Deleted Products
 </a>
 @endsection
 
 @section('content')
-<div class="space-y-6">
+<div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse">
+            <thead>
+                <tr class="bg-gray-50 border-b border-gray-200">
+                    <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Product</th>
+                    <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Variants</th>
+                    <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Created Date</th>
+                    <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-gray-500">Type / Workshop</th>
+                    <th class="px-6 py-4 text-xs font-semibold uppercase tracking-wider text-gray-500 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
     @forelse($products as $product)
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 overflow-hidden">
-        <div class="p-6">
-            <div class="flex items-center justify-between">
-                <!-- Left: Product Info -->
-                <div class="flex items-center gap-4 flex-1">
-                    <!-- Product Image or Icon -->
-                    @php
-                        $primaryImage = $product->images->where('is_primary', true)->first() ?? $product->images->first();
-                    @endphp
-                    @if($primaryImage)
-                        <img src="{{ Storage::url($primaryImage->image_path) }}" alt="{{ $product->name }}" class="w-14 h-14 rounded-xl object-cover border shadow-md" style="border-color: #E5E7EB;">
-                    @else
-                        <div class="w-14 h-14 rounded-xl flex items-center justify-center font-bold text-white text-lg shadow-md" style="background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);">
-                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                            </svg>
-                        </div>
-                    @endif
-
-                    <!-- Product Details -->
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-3 mb-2">
-                            <h3 class="text-lg font-semibold text-gray-900 truncate">{{ $product->name }}</h3>
-                            @if($product->status === 'active')
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full" style="background-color: #D1FAE5; color: #065F46;">
-                                    Active
-                                </span>
-                            @elseif($product->status === 'inactive')
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full" style="background-color: #FEE2E2; color: #991B1B;">
-                                    Inactive
-                                </span>
-                            @else
-                                <span class="px-2 py-1 text-xs font-semibold rounded-full" style="background-color: #F3F4F6; color: #6B7280;">
-                                    Draft
-                                </span>
-                            @endif
-                        </div>
-                        @if($product->sku)
-                            <div class="flex items-center gap-1.5 text-sm text-gray-600 mb-1">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"></path>
-                                </svg>
-                                <span>SKU: {{ $product->sku }}</span>
-                            </div>
-                        @endif
-                        <div class="flex items-center gap-4 text-sm text-gray-500">
-                            <div class="flex items-center gap-1.5">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
-                                </svg>
-                                <span>{{ $product->variants_count }} {{ $product->variants_count === 1 ? 'variant' : 'variants' }}</span>
-                            </div>
-                            <div class="flex items-center gap-1.5">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                                </svg>
-                                <span>Created {{ $product->created_at->format('M d, Y') }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right: Actions -->
-                <div class="flex items-center gap-2 ml-4">
-                    <a href="{{ route('admin.products.show', $product) }}" class="px-4 py-2 rounded-lg text-sm font-medium transition-all border" style="color: #2563EB; border-color: #DBEAFE; background-color: #EFF6FF;" onmouseover="this.style.backgroundColor='#DBEAFE'; this.style.borderColor='#2563EB';" onmouseout="this.style.backgroundColor='#EFF6FF'; this.style.borderColor='#DBEAFE';">
-                        <svg class="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                        </svg>
-                        View
-                    </a>
-                    <a href="{{ route('admin.products.edit', $product) }}" class="px-4 py-2 rounded-lg text-sm font-medium transition-all border" style="color: #2563EB; border-color: #DBEAFE; background-color: #EFF6FF;" onmouseover="this.style.backgroundColor='#DBEAFE'; this.style.borderColor='#2563EB';" onmouseout="this.style.backgroundColor='#EFF6FF'; this.style.borderColor='#DBEAFE';">
-                        <svg class="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                        </svg>
-                        Edit
-                    </a>
-                    <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this product?\n\nThis will soft delete (can be restored).\nTo permanently delete, use Force Delete button.');">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="px-4 py-2 rounded-lg text-sm font-medium transition-all border" style="color: #DC2626; border-color: #FEE2E2; background-color: #FEF2F2;" onmouseover="this.style.backgroundColor='#FEE2E2'; this.style.borderColor='#DC2626';" onmouseout="this.style.backgroundColor='#FEF2F2'; this.style.borderColor='#FEE2E2';">
-                            <svg class="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                            </svg>
-                            Delete
-                        </button>
-                    </form>
-                    <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="inline" onsubmit="return confirm('⚠️ WARNING: This will PERMANENTLY delete the product from database!\n\nThis action CANNOT be undone!\n\nAre you absolutely sure?');">
-                        @csrf
-                        @method('DELETE')
-                        <input type="hidden" name="force" value="1">
-                        <button type="submit" class="px-4 py-2 rounded-lg text-sm font-medium transition-all border" style="color: #991B1B; border-color: #FEE2E2; background-color: #FEF2F2;" onmouseover="this.style.backgroundColor='#FEE2E2'; this.style.borderColor='#DC2626';" onmouseout="this.style.backgroundColor='#FEF2F2'; this.style.borderColor='#FEE2E2';" title="Permanently delete from database">
-                            <svg class="w-4 h-4 inline mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                            </svg>
-                            Force Delete
-                        </button>
-                    </form>
-                </div>
+            @php
+                $primaryImage = $product->images->where('is_primary', true)->first() ?? $product->images->first();
+            @endphp
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-5">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 bg-gray-100 rounded-md overflow-hidden shrink-0 border border-gray-200">
+            @if($primaryImage)
+                                    <img alt="{{ $product->name }}" class="w-full h-full object-cover" src="{{ Storage::url($primaryImage->image_path) }}">
+            @else
+                                    <div class="w-full h-full flex items-center justify-center bg-gray-100">
+                                        <span class="material-symbols-outlined text-gray-400">inventory_2</span>
+                                    </div>
+            @endif
+        </div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-bold text-gray-900">{{ $product->name }}</span>
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide
+                    @if($product->status === 'active') bg-emerald-100 text-emerald-700
+                    @elseif($product->status === 'inactive') bg-red-100 text-red-700
+                                        @else bg-amber-100 text-amber-700
+                    @endif">
+                                        <span class="w-1.5 h-1.5 rounded-full mr-1.5
+                        @if($product->status === 'active') bg-emerald-500
+                        @elseif($product->status === 'inactive') bg-red-500
+                                            @else bg-amber-500
+                        @endif"></span> 
+                    {{ ucfirst($product->status) }}
+                </span>
+            </div>
+                                @if($product->sku)
+                                    <p class="text-xs text-gray-500 mt-0.5">ID: {{ $product->sku }}</p>
+                @endif
             </div>
         </div>
-    </div>
+                    </td>
+                    <td class="px-6 py-5">
+                        <div class="flex items-center text-sm text-gray-600">
+                            <span class="material-symbols-outlined text-gray-400">assignment</span>
+                            <span class="ml-1">{{ $product->variants_count ?? 0 }} {{ ($product->variants_count ?? 0) === 1 ? 'variant' : 'variants' }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-5">
+                        <div class="flex items-center text-sm text-gray-600">
+                            <span class="material-symbols-outlined text-gray-400">calendar_today</span>
+                            <span class="ml-1">{{ $product->created_at->format('M d, Y') }}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-5">
+                        @if($product->workshop)
+                            <div class="flex items-center text-sm text-gray-600">
+                                <span class="material-symbols-outlined text-gray-400">factory</span>
+                                <span class="ml-1">{{ $product->workshop->name }}</span>
+                            </div>
+                        @else
+                            <span class="text-sm text-gray-400">-</span>
+                        @endif
+                    </td>
+                    <td class="px-6 py-5 text-right">
+                        <div class="flex items-center justify-end gap-4">
+                            <a href="{{ route('admin.products.show', $product) }}" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">View</a>
+                            <a href="{{ route('admin.products.edit', $product) }}" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">Edit</a>
+            <form action="{{ route('admin.products.destroy', $product->id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this product?\n\nThis will soft delete (can be restored).\nTo permanently delete, use Force Delete button.');">
+                @csrf
+                @method('DELETE')
+                                <button type="submit" class="text-sm font-medium text-red-500 hover:text-red-700 transition-colors">Delete</button>
+            </form>
+        </div>
+                    </td>
+                </tr>
     @empty
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-        <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-        </svg>
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center">
+                        <span class="material-symbols-outlined text-6xl text-gray-200 mb-4 block">inventory_2</span>
         <h3 class="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
-        <p class="text-sm text-gray-600 mb-6">Get started by creating a new product.</p>
-        <a href="{{ route('admin.products.create') }}" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-sm" style="background-color: #2563EB;" onmouseover="this.style.backgroundColor='#1D4ED8';" onmouseout="this.style.backgroundColor='#2563EB';">
-            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-            </svg>
+        <p class="text-sm text-gray-500 mb-6">Get started by creating a new product.</p>
+        <a href="{{ route('admin.products.create') }}" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 transition-all shadow-sm">
+            <span class="material-symbols-outlined text-base mr-2">add</span>
             Add First Product
         </a>
+                    </td>
+                </tr>
+                @endforelse
+            </tbody>
+        </table>
     </div>
-    @endforelse
+    @if($products->hasPages())
+    <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
+        <span class="text-sm text-gray-500 font-medium">Showing {{ $products->firstItem() }} to {{ $products->lastItem() }} of {{ $products->total() }} products</span>
+        <div class="flex gap-2">
+            @if($products->onFirstPage())
+                <button class="p-2 text-gray-400 transition-colors disabled:opacity-30" disabled>
+                    <span class="material-symbols-outlined m-0">chevron_left</span>
+                </button>
+            @else
+                <a href="{{ $products->previousPageUrl() }}" class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                    <span class="material-symbols-outlined m-0">chevron_left</span>
+                </a>
+            @endif
+            
+            @php
+                $currentPage = $products->currentPage();
+                $lastPage = $products->lastPage();
+                $startPage = max(1, $currentPage - 2);
+                $endPage = min($lastPage, $currentPage + 2);
+            @endphp
+            
+            @if($startPage > 1)
+                <a href="{{ $products->url(1) }}" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 text-sm font-semibold transition-colors">1</a>
+                @if($startPage > 2)
+                    <span class="w-8 h-8 flex items-center justify-center text-gray-400">...</span>
+                @endif
+            @endif
+            
+            @for($page = $startPage; $page <= $endPage; $page++)
+                @if($page == $currentPage)
+                    <button class="w-8 h-8 flex items-center justify-center rounded-md bg-orange-500 text-white text-sm font-semibold">{{ $page }}</button>
+                @else
+                    <a href="{{ $products->url($page) }}" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 text-sm font-semibold transition-colors">{{ $page }}</a>
+                @endif
+            @endfor
+            
+            @if($endPage < $lastPage)
+                @if($endPage < $lastPage - 1)
+                    <span class="w-8 h-8 flex items-center justify-center text-gray-400">...</span>
+                @endif
+                <a href="{{ $products->url($lastPage) }}" class="w-8 h-8 flex items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 text-sm font-semibold transition-colors">{{ $lastPage }}</a>
+            @endif
+            
+            @if($products->hasMorePages())
+                <a href="{{ $products->nextPageUrl() }}" class="p-2 text-gray-400 hover:text-gray-600 transition-colors">
+                    <span class="material-symbols-outlined m-0">chevron_right</span>
+                </a>
+            @else
+                <button class="p-2 text-gray-400 transition-colors disabled:opacity-30" disabled>
+                    <span class="material-symbols-outlined m-0">chevron_right</span>
+                </button>
+            @endif
 </div>
-
-<!-- Pagination -->
-@if($products->hasPages())
-<div class="mt-6 flex items-center justify-center">
-    <div class="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3">
-        {{ $products->links() }}
     </div>
-</div>
 @endif
+</div>
 @endsection
 
 @php
     $activeMenu = 'products';
 @endphp
-
-
-
-
-

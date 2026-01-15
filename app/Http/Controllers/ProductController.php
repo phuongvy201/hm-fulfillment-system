@@ -114,9 +114,32 @@ class ProductController extends Controller
                         ->with('market', 'pricingTier')
                         ->orderBy('base_price');
                 },
+                'tierPrices' => function ($query) {
+                    $query->where('status', 'active')
+                        ->whereNull('variant_id')
+                        ->with('market', 'pricingTier')
+                        ->orderBy('base_price');
+                },
                 'workshop.market'
             ])
             ->firstOrFail();
+
+        // Get product market to determine which currencies to convert to
+        $productMarket = $product->workshop->market ?? null;
+        $marketCode = $productMarket ? strtoupper($productMarket->code) : null;
+
+        // Determine currencies to convert to based on market
+        $currenciesToConvert = [];
+        if ($marketCode === 'US' || $marketCode === 'USA') {
+            // US market: convert to GBP and VND (already in USD)
+            $currenciesToConvert = ['GBP', 'VND'];
+        } elseif ($marketCode === 'UK' || $marketCode === 'GB') {
+            // UK market: convert to USD and VND (already in GBP)
+            $currenciesToConvert = ['USD', 'VND'];
+        } else {
+            // Default: convert to all three
+            $currenciesToConvert = ['GBP', 'USD', 'VND'];
+        }
 
         // Get default tier (wood tier - tier có priority thấp nhất hoặc không có min_orders)
         $defaultTier = PricingTier::where('status', 'active')
@@ -131,59 +154,99 @@ class ProductController extends Controller
                 ->first();
         }
 
-        // Prepare variants data for JavaScript
-        $variantsData = $product->variants->map(function ($variant) use ($defaultTier) {
+        // Get wood tier - try multiple ways to find it
+        $woodTier = PricingTier::where('status', 'active')
+            ->where(function ($q) {
+                $q->where('name', 'like', '%wood%')
+                    ->orWhere('slug', 'wood')
+                    ->orWhere('slug', 'like', '%wood%');
+            })
+            ->first();
+
+        // Fallback: if no wood tier found by name/slug, get tier with lowest priority (usually wood tier)
+        if (!$woodTier) {
+            $woodTier = PricingTier::where('status', 'active')
+                ->whereNull('min_orders')
+                ->orderBy('priority', 'asc')
+                ->first();
+        }
+
+        // Final fallback: get any tier with lowest priority
+        if (!$woodTier) {
+            $woodTier = PricingTier::where('status', 'active')
+                ->orderBy('priority', 'asc')
+                ->first();
+        }
+
+        // Get PricingService for currency conversion
+        // This service uses ExchangeRate model to get current exchange rates from database
+        $pricingService = app(\App\Services\PricingService::class);
+
+        // Get product-level wood tier prices as fallback
+        $productLevelSellerPrice = null;
+        $productLevelTiktokPrice = null;
+        if ($woodTier) {
+            $productLevelSellerPrice = $product->tierPrices
+                ->where('pricing_tier_id', $woodTier->id)
+                ->where('status', 'active')
+                ->where('shipping_type', 'seller')
+                ->first();
+
+            $productLevelTiktokPrice = $product->tierPrices
+                ->where('pricing_tier_id', $woodTier->id)
+                ->where('status', 'active')
+                ->where('shipping_type', 'tiktok')
+                ->first();
+        }
+
+        // Prepare variants data for JavaScript - get TikTok and Seller prices
+        $variantsData = $product->variants->map(function ($variant) use ($woodTier, $pricingService, $productLevelSellerPrice, $productLevelTiktokPrice, $currenciesToConvert) {
             $attributes = [];
             foreach ($variant->variantAttributes as $attr) {
                 $attributes[$attr->attribute_name] = $attr->attribute_value;
             }
 
-            // Get prices for all shipping types from default tier (wood tier)
+            // Get prices for TikTok and Seller shipping types
             $prices = [
-                'default' => null,
                 'seller' => null,
                 'seller_additional' => null,
                 'tiktok' => null,
                 'tiktok_additional' => null,
-                'wood' => null,
             ];
             $currency = 'USD';
             $market = null;
 
-            if ($defaultTier) {
-                // Get default price (shipping_type = null)
-                $defaultPrice = $variant->tierPrices
-                    ->where('pricing_tier_id', $defaultTier->id)
-                    ->where('status', 'active')
-                    ->whereNull('shipping_type')
-                    ->first();
-
-                if ($defaultPrice) {
-                    $prices['default'] = $defaultPrice->base_price;
-                    $currency = $defaultPrice->currency;
-                    $market = $defaultPrice->market;
-                }
-
-                // Get seller price
+            if ($woodTier) {
+                // Get seller price from variant first
                 $sellerPrice = $variant->tierPrices
-                    ->where('pricing_tier_id', $defaultTier->id)
+                    ->where('pricing_tier_id', $woodTier->id)
                     ->where('status', 'active')
                     ->where('shipping_type', 'seller')
                     ->first();
 
+                // Fallback to product-level price if variant doesn't have price
+                if (!$sellerPrice && $productLevelSellerPrice) {
+                    $sellerPrice = $productLevelSellerPrice;
+                }
+
                 if ($sellerPrice) {
                     $prices['seller'] = $sellerPrice->base_price;
                     $prices['seller_additional'] = $sellerPrice->additional_item_price;
-                    if (!$currency) $currency = $sellerPrice->currency;
-                    if (!$market) $market = $sellerPrice->market;
+                    $currency = $sellerPrice->currency;
+                    $market = $sellerPrice->market;
                 }
 
-                // Get tiktok price
+                // Get tiktok price from variant first
                 $tiktokPrice = $variant->tierPrices
-                    ->where('pricing_tier_id', $defaultTier->id)
+                    ->where('pricing_tier_id', $woodTier->id)
                     ->where('status', 'active')
                     ->where('shipping_type', 'tiktok')
                     ->first();
+
+                // Fallback to product-level price if variant doesn't have price
+                if (!$tiktokPrice && $productLevelTiktokPrice) {
+                    $tiktokPrice = $productLevelTiktokPrice;
+                }
 
                 if ($tiktokPrice) {
                     $prices['tiktok'] = $tiktokPrice->base_price;
@@ -191,56 +254,42 @@ class ProductController extends Controller
                     if (!$currency) $currency = $tiktokPrice->currency;
                     if (!$market) $market = $tiktokPrice->market;
                 }
+            }
 
-                // Get wood tier price
-                $woodTier = PricingTier::where('status', 'active')
-                    ->where(function ($q) {
-                        $q->where('name', 'like', '%wood%')
-                            ->orWhere('slug', 'wood');
-                    })
-                    ->first();
+            // Convert prices based on market (both base and additional)
+            // Exchange rates are retrieved from database via PricingService::convertCurrency()
+            // Falls back to hardcoded rates if no database rate is found
+            $convertedPrices = [
+                'seller' => [
+                    'base' => [],
+                    'additional' => [],
+                ],
+                'tiktok' => [
+                    'base' => [],
+                    'additional' => [],
+                ],
+            ];
 
-                if ($woodTier) {
-                    $woodPrice = $variant->tierPrices
-                        ->where('pricing_tier_id', $woodTier->id)
-                        ->where('status', 'active')
-                        ->whereNull('shipping_type')
-                        ->first();
-
-                    if ($woodPrice) {
-                        $prices['wood'] = $woodPrice->base_price;
+            if ($prices['seller']) {
+                foreach ($currenciesToConvert as $targetCurrency) {
+                    // Uses ExchangeRate::getCurrentRate() from database
+                    $convertedPrices['seller']['base'][$targetCurrency] = $pricingService->convertCurrency((float)$prices['seller'], $currency, $targetCurrency);
+                }
+                if ($prices['seller_additional']) {
+                    foreach ($currenciesToConvert as $targetCurrency) {
+                        $convertedPrices['seller']['additional'][$targetCurrency] = $pricingService->convertCurrency((float)$prices['seller_additional'], $currency, $targetCurrency);
                     }
                 }
             }
 
-            // Fallback: if no default tier prices, get first active prices
-            if (!$prices['default'] && !$prices['seller'] && !$prices['tiktok']) {
-                $activePrices = $variant->tierPrices->where('status', 'active');
-
-                // Get default price
-                $firstDefault = $activePrices->whereNull('shipping_type')->first();
-                if ($firstDefault) {
-                    $prices['default'] = $firstDefault->base_price;
-                    $currency = $firstDefault->currency;
-                    $market = $firstDefault->market;
+            if ($prices['tiktok']) {
+                foreach ($currenciesToConvert as $targetCurrency) {
+                    $convertedPrices['tiktok']['base'][$targetCurrency] = $pricingService->convertCurrency((float)$prices['tiktok'], $currency, $targetCurrency);
                 }
-
-                // Get seller price
-                $firstSeller = $activePrices->where('shipping_type', 'seller')->first();
-                if ($firstSeller) {
-                    $prices['seller'] = $firstSeller->base_price;
-                    $prices['seller_additional'] = $firstSeller->additional_item_price;
-                    if (!$currency) $currency = $firstSeller->currency;
-                    if (!$market) $market = $firstSeller->market;
-                }
-
-                // Get tiktok price
-                $firstTiktok = $activePrices->where('shipping_type', 'tiktok')->first();
-                if ($firstTiktok) {
-                    $prices['tiktok'] = $firstTiktok->base_price;
-                    $prices['tiktok_additional'] = $firstTiktok->additional_item_price;
-                    if (!$currency) $currency = $firstTiktok->currency;
-                    if (!$market) $market = $firstTiktok->market;
+                if ($prices['tiktok_additional']) {
+                    foreach ($currenciesToConvert as $targetCurrency) {
+                        $convertedPrices['tiktok']['additional'][$targetCurrency] = $pricingService->convertCurrency((float)$prices['tiktok_additional'], $currency, $targetCurrency);
+                    }
                 }
             }
 
@@ -249,10 +298,47 @@ class ProductController extends Controller
                 'sku' => $variant->sku ?? 'N/A',
                 'attributes' => $attributes,
                 'prices' => $prices,
+                'convertedPrices' => $convertedPrices,
                 'currency' => $currency,
                 'market' => $market ? $market->name : null,
             ];
         });
+
+        // Calculate minimum price from all variants for "From" display
+        // Use the lowest price from seller or tiktok
+        $minWoodPrice = null;
+        $minWoodPriceCurrency = 'USD';
+        $minWoodPriceMarket = null;
+
+        foreach ($variantsData as $variant) {
+            // Check seller price
+            if (!is_null($variant['prices']['seller'])) {
+                if (is_null($minWoodPrice) || $variant['prices']['seller'] < $minWoodPrice) {
+                    $minWoodPrice = $variant['prices']['seller'];
+                    $minWoodPriceCurrency = $variant['currency'] ?? 'USD';
+                    $minWoodPriceMarket = $variant['market'];
+                }
+            }
+
+            // Check tiktok price
+            if (!is_null($variant['prices']['tiktok'])) {
+                if (is_null($minWoodPrice) || $variant['prices']['tiktok'] < $minWoodPrice) {
+                    $minWoodPrice = $variant['prices']['tiktok'];
+                    $minWoodPriceCurrency = $variant['currency'] ?? 'USD';
+                    $minWoodPriceMarket = $variant['market'];
+                }
+            }
+        }
+
+        // Get first variant with price for summary display (for currency/market info)
+        $firstVariantWithWoodPrice = $variantsData->first(function ($variant) {
+            return !is_null($variant['prices']['seller']) || !is_null($variant['prices']['tiktok']);
+        });
+
+        // If no variant has price, try to get any price from first variant
+        if (!$firstVariantWithWoodPrice && $variantsData->isNotEmpty()) {
+            $firstVariantWithWoodPrice = $variantsData->first();
+        }
 
         // Get all active markets for price display
         $markets = Market::where('status', 'active')->get();
@@ -269,6 +355,6 @@ class ProductController extends Controller
             ->take(4)
             ->get();
 
-        return view('products.show', compact('product', 'markets', 'relatedProducts', 'defaultTier', 'variantsData'));
+        return view('products.show', compact('product', 'markets', 'relatedProducts', 'defaultTier', 'variantsData', 'firstVariantWithWoodPrice', 'woodTier', 'minWoodPrice', 'minWoodPriceCurrency', 'minWoodPriceMarket', 'currenciesToConvert', 'marketCode'));
     }
 }

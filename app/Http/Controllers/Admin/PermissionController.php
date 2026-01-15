@@ -32,10 +32,14 @@ class PermissionController extends Controller
             });
         }
 
+        // Get per page value
+        $perPage = $request->get('per_page', 20);
+        $perPage = in_array($perPage, [12, 25, 50, 100]) ? $perPage : 20;
+
         $permissions = $query->withCount('roles')
             ->orderBy('group')
             ->orderBy('name')
-            ->paginate(20);
+            ->paginate($perPage)->withQueryString();
 
         // Get all groups for filter
         $groups = Permission::distinct()->pluck('group')->filter()->sort()->values();

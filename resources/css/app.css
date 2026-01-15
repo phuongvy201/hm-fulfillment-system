@@ -8,8 +8,133 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+    
+    /* Primary Color Palette - Tailwind v4 format */
+    --color-primary-50: oklch(0.97 0.05 70);
+    --color-primary-100: oklch(0.94 0.1 70);
+    --color-primary-200: oklch(0.88 0.15 70);
+    --color-primary-300: oklch(0.82 0.2 70);
+    --color-primary-400: oklch(0.76 0.25 70);
+    --color-primary-500: #f7951d;
+    --color-primary-600: #d67a0f;
+    --color-primary-700: #b35f0a;
+    --color-primary-800: #90450c;
+    --color-primary-900: #6d330d;
     --color-primary: #f7951d;
+    
+    /* Background Colors */
     --color-background-light: #f8f7f5;
     --color-background-dark: #231a0f;
+}
 
+/* Custom utilities để đảm bảo primary color hoạt động */
+@layer base {
+    :root {
+        --primary: #f7951d;
+        --primary-50: #fef5e7;
+        --primary-100: #fde8c4;
+        --primary-200: #fbd08a;
+        --primary-300: #f9b850;
+        --primary-400: #f7951d;
+        --primary-500: #f7951d;
+        --primary-600: #d67a0f;
+        --primary-700: #b35f0a;
+        --primary-800: #90450c;
+        --primary-900: #6d330d;
+    }
+}
+
+@layer utilities {
+    /* Border Primary */
+    .border-primary {
+        --tw-border-opacity: 1;
+        border-color: rgb(247 149 29 / var(--tw-border-opacity)) !important;
+    }
+    
+    /* Text Primary */
+    .text-primary {
+        --tw-text-opacity: 1;
+        color: rgb(247 149 29 / var(--tw-text-opacity)) !important;
+    }
+    
+    /* Background Primary */
+    .bg-primary {
+        --tw-bg-opacity: 1;
+        background-color: rgb(247 149 29 / var(--tw-bg-opacity)) !important;
+    }
+    
+    /* Background Primary with opacity */
+    .bg-primary\/5 {
+        background-color: rgba(247, 149, 29, 0.05) !important;
+    }
+    .bg-primary\/10 {
+        background-color: rgba(247, 149, 29, 0.1) !important;
+    }
+    .bg-primary\/20 {
+        background-color: rgba(247, 149, 29, 0.2) !important;
+    }
+    .bg-primary\/30 {
+        background-color: rgba(247, 149, 29, 0.3) !important;
+    }
+    
+    /* Hover states */
+    .hover\:border-primary\/50:hover {
+        border-color: rgba(247, 149, 29, 0.5) !important;
+    }
+    .hover\:text-primary:hover {
+        color: #f7951d !important;
+    }
+}
+
+/* Product Show Page Styles */
+@layer components {
+    .glass-container {
+        @apply bg-white/40 dark:bg-neutral-900/40 backdrop-blur-xl border border-white/20 dark:border-white/10 shadow-xl;
+    }
+    
+    .color-swatch {
+        @apply w-10 h-10 rounded-full border-2 border-transparent cursor-pointer transition-all hover:scale-110 flex items-center justify-center p-0.5;
+    }
+    
+    .active-swatch {
+        @apply border-primary scale-110;
+    }
+    
+    .size-btn {
+        @apply flex items-center justify-center border-2 border-neutral-100 dark:border-neutral-800 rounded-2xl text-sm font-bold hover:border-primary/50 transition-all py-3 px-5 bg-white dark:bg-neutral-900;
+    }
+    
+    .active-size {
+        @apply border-primary text-primary bg-primary/5;
+    }
+    
+    .metric-card {
+        @apply p-6 rounded-2xl bg-white/60 dark:bg-neutral-800/60 border border-white/20 flex flex-col items-center justify-center text-center transition-all hover:translate-y-[-2px];
+    }
+    
+    .tab-btn {
+        @apply flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all border-b-2;
+    }
+    
+    .tab-active {
+        @apply border-primary text-neutral-900 dark:text-white;
+    }
+    
+    .tab-inactive {
+        @apply border-transparent text-neutral-400 hover:text-neutral-600;
+    }
+    
+    .btn-gradient {
+        background: linear-gradient(to right, #FF8A00, #FFB800);
+        @apply text-white shadow-lg;
+        box-shadow: 0 10px 15px -3px rgba(247, 149, 29, 0.3);
+    }
+    
+    .btn-gradient:hover {
+        background: linear-gradient(to right, #FF9E2C, #FFC93F);
+    }
+    
+    .price-tab-content {
+        transition: opacity 0.15s ease-in-out;
+    }
 }

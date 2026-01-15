@@ -92,7 +92,9 @@ class WorkshopPriceController extends Controller
             'clear_existing' => ['nullable', 'boolean'],
             'prices' => ['required', 'array'],
             'prices.seller.base_price' => ['nullable', 'numeric', 'min:0'],
+            'prices.seller.additional_item_price' => ['nullable', 'numeric', 'min:0'],
             'prices.tiktok.base_price' => ['nullable', 'numeric', 'min:0'],
+            'prices.tiktok.additional_item_price' => ['nullable', 'numeric', 'min:0'],
             'status' => ['required', 'in:active,inactive'],
             'valid_from' => ['nullable', 'date'],
             'valid_to' => ['nullable', 'date', 'after_or_equal:valid_from'],
@@ -210,6 +212,7 @@ class WorkshopPriceController extends Controller
                         ],
                         [
                             'base_price' => $validated['prices'][$shippingType]['base_price'],
+                            'additional_item_price' => !empty($validated['prices'][$shippingType]['additional_item_price']) ? $validated['prices'][$shippingType]['additional_item_price'] : null,
                             'currency' => $market->currency,
                             'status' => $validated['status'] ?? 'active',
                             'valid_from' => !empty($validated['valid_from']) ? $validated['valid_from'] : null,
@@ -309,7 +312,9 @@ class WorkshopPriceController extends Controller
         $validated = $request->validate([
             'prices' => ['required', 'array'],
             'prices.seller.base_price' => ['nullable', 'numeric', 'min:0'],
+            'prices.seller.additional_item_price' => ['nullable', 'numeric', 'min:0'],
             'prices.tiktok.base_price' => ['nullable', 'numeric', 'min:0'],
+            'prices.tiktok.additional_item_price' => ['nullable', 'numeric', 'min:0'],
             'status' => ['required', 'in:active,inactive'],
             'valid_from' => ['nullable', 'date'],
             'valid_to' => ['nullable', 'date', 'after_or_equal:valid_from'],
@@ -339,6 +344,7 @@ class WorkshopPriceController extends Controller
                     ],
                     [
                         'base_price' => $validated['prices'][$shippingType]['base_price'],
+                        'additional_item_price' => !empty($validated['prices'][$shippingType]['additional_item_price']) ? $validated['prices'][$shippingType]['additional_item_price'] : null,
                         'currency' => $market->currency,
                         'status' => $validated['status'] ?? 'active',
                         'valid_from' => !empty($validated['valid_from']) ? $validated['valid_from'] : null,
