@@ -66,7 +66,8 @@
                             <label for="api_type" class="block text-sm font-semibold mb-2">API Type</label>
                             <select id="api_type" name="api_type" class="w-full px-4 py-3 border rounded-lg">
                                 <option value="">Select API Type</option>
-                                <option value="rest" {{ old('api_type', $workshop->api_type) === 'rest' ? 'selected' : '' }}>REST API</option>
+                                <option value="rest" {{ old('api_type', $workshop->api_type) === 'rest' ? 'selected' : '' }}>REST API (Generic)</option>
+                                <option value="twofifteen" {{ old('api_type', $workshop->api_type) === 'twofifteen' ? 'selected' : '' }}>Twofifteen</option>
                                 <option value="soap" {{ old('api_type', $workshop->api_type) === 'soap' ? 'selected' : '' }}>SOAP API</option>
                                 <option value="custom" {{ old('api_type', $workshop->api_type) === 'custom' ? 'selected' : '' }}>Custom</option>
                             </select>
@@ -86,27 +87,39 @@
                         </div>
 
                         <div>
-                            <label for="api_key" class="block text-sm font-semibold mb-2">API Key</label>
+                            <label for="api_key" class="block text-sm font-semibold mb-2">
+                                <span id="api_key_label">API Key</span>
+                                <span id="api_key_hint_twofifteen" class="hidden text-xs text-gray-500 font-normal">(AppID cho Twofifteen)</span>
+                            </label>
                             <input 
                                 type="text" 
                                 id="api_key" 
                                 name="api_key" 
                                 value="{{ old('api_key', $workshop->api_key) }}"
-                                placeholder="Your API key"
+                                placeholder="Your API key or AppID"
                                 class="w-full px-4 py-3 border rounded-lg"
                             >
+                            <p id="api_key_help_twofifteen" class="mt-1 text-xs text-gray-500 hidden">
+                                Nhập AppID từ API Settings page của Twofifteen
+                            </p>
                         </div>
 
                         <div>
-                            <label for="api_secret" class="block text-sm font-semibold mb-2">API Secret</label>
+                            <label for="api_secret" class="block text-sm font-semibold mb-2">
+                                <span id="api_secret_label">API Secret</span>
+                                <span id="api_secret_hint_twofifteen" class="hidden text-xs text-gray-500 font-normal">(Secret Key cho Twofifteen)</span>
+                            </label>
                             <input 
                                 type="password" 
                                 id="api_secret" 
                                 name="api_secret" 
                                 value="{{ old('api_secret', $workshop->api_secret) }}"
-                                placeholder="Your API secret"
+                                placeholder="Your API secret or Secret Key"
                                 class="w-full px-4 py-3 border rounded-lg"
                             >
+                            <p id="api_secret_help_twofifteen" class="mt-1 text-xs text-gray-500 hidden">
+                                Nhập Secret Key từ API Settings page của Twofifteen
+                            </p>
                         </div>
 
                         <div>
@@ -150,6 +163,44 @@
 @php
     $activeMenu = 'workshops';
 @endphp
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const apiTypeSelect = document.getElementById('api_type');
+    const apiKeyLabel = document.getElementById('api_key_label');
+    const apiKeyHint = document.getElementById('api_key_hint_twofifteen');
+    const apiKeyHelp = document.getElementById('api_key_help_twofifteen');
+    const apiSecretLabel = document.getElementById('api_secret_label');
+    const apiSecretHint = document.getElementById('api_secret_hint_twofifteen');
+    const apiSecretHelp = document.getElementById('api_secret_help_twofifteen');
+    
+    function updateLabels() {
+        const apiType = apiTypeSelect.value;
+        
+        if (apiType === 'twofifteen') {
+            // Hiển thị hint cho Twofifteen
+            apiKeyHint.classList.remove('hidden');
+            apiKeyHelp.classList.remove('hidden');
+            apiSecretHint.classList.remove('hidden');
+            apiSecretHelp.classList.remove('hidden');
+        } else {
+            // Ẩn hint cho các loại API khác
+            apiKeyHint.classList.add('hidden');
+            apiKeyHelp.classList.add('hidden');
+            apiSecretHint.classList.add('hidden');
+            apiSecretHelp.classList.add('hidden');
+        }
+    }
+    
+    // Cập nhật khi thay đổi
+    apiTypeSelect.addEventListener('change', updateLabels);
+    
+    // Cập nhật khi load trang
+    updateLabels();
+});
+</script>
+@endpush
 
 
 

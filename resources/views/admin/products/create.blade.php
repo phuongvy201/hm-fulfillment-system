@@ -44,7 +44,7 @@
                                 value="{{ old('name') }}"
                                 required 
                                 autofocus
-                                placeholder="VD: Áo thun, Áo hoodie, Cốc"
+                                placeholder="VD: T-shirt, Hoodie, Mug"
                                 class="w-full px-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2"
                                 style="border-color: #CBD5E1; color: #0F172A; background-color: #FFFFFF;"
                                 onfocus="this.style.borderColor='#F7961D'; this.style.boxShadow='0 0 0 3px rgba(247, 150, 29, 0.1)';"

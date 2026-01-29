@@ -13,3 +13,13 @@ Schedule::command('pricing-tiers:auto-assign --reset')
     ->monthly()
     ->at('00:00')
     ->description('Reset và tự động phân hạng pricing tiers hàng tháng');
+
+// Schedule: Tự động chuyển đơn hàng từ on_hold sang pending sau 1 giờ (chạy mỗi 5 phút)
+Schedule::command('orders:update-on-hold-to-pending')
+    ->everyFiveMinutes()
+    ->description('Tự động chuyển đơn hàng từ on_hold sang pending sau 1 giờ');
+
+// Schedule: Đồng bộ tracking từ Twofifteen workshop (chạy mỗi 10 phút)
+Schedule::command('tracking:sync-twofifteen')
+    ->everyTenMinutes()
+    ->description('Đồng bộ tracking từ Twofifteen workshop mỗi 10 phút');

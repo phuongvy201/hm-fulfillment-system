@@ -66,13 +66,21 @@
                                 type="text" 
                                 name="attribute_names[]" 
                                 placeholder="Attribute Name (e.g., Color, Size, Material)"
-                                class="flex-1 px-4 py-2 rounded-lg border border-neutral-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition"
+                                class="flex-1 px-4 py-2 rounded-lg border border-neutral-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition attribute-name-input"
+                                oninput="toggleColorHexInput(this)"
                             >
                             <input 
                                 type="text" 
                                 name="attribute_values[]" 
                                 placeholder="Attribute Value (e.g., Red, M, Cotton)"
                                 class="flex-1 px-4 py-2 rounded-lg border border-neutral-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition"
+                            >
+                            <input 
+                                type="color" 
+                                name="color_hexes[]" 
+                                value="#000000"
+                                class="color-hex-input hidden w-20 h-10 border rounded-lg cursor-pointer border-neutral-200 dark:border-gray-700"
+                                title="Mã màu hex cho frontend"
                             >
                             <button type="button" onclick="removeAttributeField(this)" class="px-3 py-2 rounded-lg text-sm font-medium border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition">
                                 Remove
@@ -110,13 +118,21 @@
                 type="text" 
                 name="attribute_names[]" 
                 placeholder="Attribute Name (e.g., Color, Size, Material)"
-                class="flex-1 px-4 py-2 rounded-lg border border-neutral-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition"
+                class="flex-1 px-4 py-2 rounded-lg border border-neutral-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition attribute-name-input"
+                oninput="toggleColorHexInput(this)"
             >
             <input 
                 type="text" 
                 name="attribute_values[]" 
                 placeholder="Attribute Value (e.g., Red, M, Cotton)"
                 class="flex-1 px-4 py-2 rounded-lg border border-neutral-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/50 transition"
+            >
+            <input 
+                type="color" 
+                name="color_hexes[]" 
+                value="#000000"
+                class="color-hex-input hidden w-20 h-10 border rounded-lg cursor-pointer border-neutral-200 dark:border-gray-700"
+                title="Mã màu hex cho frontend"
             >
             <button type="button" onclick="removeAttributeField(this)" class="px-3 py-2 rounded-lg text-sm font-medium border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition">
                 Remove
@@ -129,6 +145,24 @@
         const container = document.getElementById('attributes-container');
         if (container.children.length > 1) {
             button.closest('.attribute-row').remove();
+        }
+    }
+
+    function toggleColorHexInput(input) {
+        const row = input.closest('.attribute-row');
+        const colorHexInput = row.querySelector('.color-hex-input');
+        const attrName = input.value.toLowerCase().trim();
+        
+        // Kiểm tra nếu là color attribute
+        const isColor = attrName === 'color' || 
+                       attrName === 'màu' || 
+                       attrName.includes('color') || 
+                       attrName.includes('màu');
+        
+        if (isColor && colorHexInput) {
+            colorHexInput.classList.remove('hidden');
+        } else if (colorHexInput) {
+            colorHexInput.classList.add('hidden');
         }
     }
 </script>

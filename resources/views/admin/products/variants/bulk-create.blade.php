@@ -99,14 +99,16 @@
                                 rows="12"
                                 required 
                                 autofocus
-                                placeholder="Red&#10;Blue&#10;Green&#10;Black&#10;White&#10;&#10;Với mã màu:&#10;Cardinal Red:CRED&#10;Navy Blue:NAVY&#10;Black:BLAC&#10;&#10;Với sizes tùy chỉnh:&#10;Cardinal Red:CRED|S,M,L,XL,2XL,3XL&#10;Black:BLAC|XS,S,M,L,XL,2XL,3XL,4XL,5XL"
+                                placeholder="Red&#10;Blue&#10;Green&#10;Black:#000000&#10;White:#FFFFFF&#10;&#10;Với mã màu hex:&#10;Red:#FF0000&#10;Blue:#0000FF&#10;Cardinal Red:#DC143C:CRED&#10;&#10;Với mã màu hex và sizes tùy chỉnh:&#10;Red:#FF0000|S,M,L,XL,2XL&#10;Black:#000000:BLAC|XS,S,M,L,XL"
                                 class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 outline-none resize-none font-mono text-sm transition-all"
                             >{{ old('colors') }}</textarea>
                             <p class="mt-2 text-xs text-gray-500">
                                 Enter one value per line.<br>
-                                • Format cơ bản: <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">Value</code> hoặc <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">Value:CODE</code><br>
-                                • Với attribute2 values tùy chỉnh: <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">Value:CODE|V1,V2,V3</code><br>
-                                Ví dụ: <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">Cardinal Red:CRED|S,M,L,XL,2XL,3XL</code>
+                                • Format cơ bản: <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">Value</code><br>
+                                • Với mã màu hex: <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">Color:#FF0000</code><br>
+                                • Với mã màu hex + SKU code: <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">Color:#FF0000:CODE</code><br>
+                                • Với sizes tùy chỉnh: <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">Color:#FF0000:CODE|S,M,L,XL</code><br>
+                                Ví dụ: <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">Red:#FF0000|S,M,L,XL</code> hoặc <code class="bg-gray-100 px-1 py-0.5 rounded text-xs">Black:#000000:BLAC</code>
                             </p>
                         </div>
 

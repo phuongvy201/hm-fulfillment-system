@@ -30,9 +30,17 @@ class ProductImage extends Model
 
     /**
      * Get the full URL of the image.
+     * Format: https://s3.{region}.amazonaws.com/{bucket}/{path}
+     * Example: https://s3.us-east-1.amazonaws.com/image.bluprinter/products/images/filename.jpg
      */
     public function getUrlAttribute(): string
     {
-        return Storage::url($this->image_path);
+        $region = config('filesystems.disks.s3.region', 'us-east-1');
+        $bucket = config('filesystems.disks.s3.bucket');
+
+        // Always build path-style URL: https://s3.{region}.amazonaws.com/{bucket}/{path}
+        // This format works better with bucket policies and doesn't require DNS setup
+        $path = ltrim($this->image_path, '/');
+        return "https://s3.{$region}.amazonaws.com/{$bucket}/{$path}";
     }
 }

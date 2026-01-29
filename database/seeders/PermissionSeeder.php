@@ -65,6 +65,13 @@ class PermissionSeeder extends Seeder
             ['name' => 'Create Users', 'slug' => 'users.create', 'group' => 'users', 'description' => 'Tạo user'],
             ['name' => 'Edit Users', 'slug' => 'users.edit', 'group' => 'users', 'description' => 'Chỉnh sửa user'],
             ['name' => 'Delete Users', 'slug' => 'users.delete', 'group' => 'users', 'description' => 'Xóa user'],
+
+            // Order Management
+            ['name' => 'View Orders', 'slug' => 'orders.view', 'group' => 'orders', 'description' => 'Xem orders'],
+            ['name' => 'Create Orders', 'slug' => 'orders.create', 'group' => 'orders', 'description' => 'Tạo order'],
+            ['name' => 'Edit Orders', 'slug' => 'orders.edit', 'group' => 'orders', 'description' => 'Chỉnh sửa order'],
+            ['name' => 'Delete Orders', 'slug' => 'orders.delete', 'group' => 'orders', 'description' => 'Xóa order'],
+            ['name' => 'Submit Orders', 'slug' => 'orders.submit', 'group' => 'orders', 'description' => 'Gửi order đến workshop'],
         ];
 
         foreach ($permissions as $permission) {
@@ -137,11 +144,13 @@ class PermissionSeeder extends Seeder
             $accountantRole->permissions()->sync($accountantPermissions->pluck('id'));
         }
 
-        // Assign permissions to customer role (customer access)
+        // Assign permissions to customer role (customer access + order creation)
         $customerRole = Role::where('slug', 'customer')->first();
         if ($customerRole) {
             $customerPermissions = Permission::whereIn('slug', [
                 'products.view',
+                'orders.view',
+                'orders.create',
                 'top-up.create',
             ])->get();
             $customerRole->permissions()->sync($customerPermissions->pluck('id'));

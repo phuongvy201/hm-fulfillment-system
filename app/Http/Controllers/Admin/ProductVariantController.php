@@ -33,6 +33,8 @@ class ProductVariantController extends Controller
             'attribute_names.*' => ['required', 'string', 'max:255'],
             'attribute_values' => ['nullable', 'array'],
             'attribute_values.*' => ['required', 'string', 'max:255'],
+            'color_hexes' => ['nullable', 'array'],
+            'color_hexes.*' => ['nullable', 'string', 'regex:/^#?[0-9a-fA-F]{6}$/i'],
             'status' => ['required', 'in:active,inactive'],
         ]);
 
@@ -47,13 +49,33 @@ class ProductVariantController extends Controller
         if (!empty($validated['attribute_names']) && !empty($validated['attribute_values'])) {
             $names = $validated['attribute_names'];
             $values = $validated['attribute_values'];
+            $colorHexes = $validated['color_hexes'] ?? [];
 
             foreach ($names as $index => $name) {
                 if (!empty($name) && isset($values[$index]) && !empty($values[$index])) {
+                    $attrName = strtolower(trim($name));
+                    $isColor = $attrName === 'color' || 
+                               $attrName === 'màu' || 
+                               str_contains($attrName, 'color') || 
+                               str_contains($attrName, 'màu');
+                    
+                    $colorHex = null;
+                    if ($isColor && isset($colorHexes[$index]) && !empty($colorHexes[$index])) {
+                        // Normalize hex color (ensure it starts with #)
+                        $hex = ltrim($colorHexes[$index], '#');
+                        if (preg_match('/^[0-9a-fA-F]{6}$/', $hex)) {
+                            $colorHex = '#' . $hex;
+                        } elseif (preg_match('/^[0-9a-fA-F]{3}$/', $hex)) {
+                            // Expand 3-digit hex to 6-digit
+                            $colorHex = '#' . $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+                        }
+                    }
+                    
                     \App\Models\VariantAttribute::create([
                         'variant_id' => $variant->id,
                         'attribute_name' => trim($name),
                         'attribute_value' => trim($values[$index]),
+                        'color_hex' => $colorHex,
                     ]);
                 }
             }
@@ -83,6 +105,8 @@ class ProductVariantController extends Controller
             'attribute_names.*' => ['required', 'string', 'max:255'],
             'attribute_values' => ['nullable', 'array'],
             'attribute_values.*' => ['required', 'string', 'max:255'],
+            'color_hexes' => ['nullable', 'array'],
+            'color_hexes.*' => ['nullable', 'string', 'regex:/^#?[0-9a-fA-F]{6}$/i'],
             'status' => ['required', 'in:active,inactive'],
         ]);
 
@@ -99,13 +123,33 @@ class ProductVariantController extends Controller
         if (!empty($validated['attribute_names']) && !empty($validated['attribute_values'])) {
             $names = $validated['attribute_names'];
             $values = $validated['attribute_values'];
+            $colorHexes = $validated['color_hexes'] ?? [];
 
             foreach ($names as $index => $name) {
                 if (!empty($name) && isset($values[$index]) && !empty($values[$index])) {
+                    $attrName = strtolower(trim($name));
+                    $isColor = $attrName === 'color' || 
+                               $attrName === 'màu' || 
+                               str_contains($attrName, 'color') || 
+                               str_contains($attrName, 'màu');
+                    
+                    $colorHex = null;
+                    if ($isColor && isset($colorHexes[$index]) && !empty($colorHexes[$index])) {
+                        // Normalize hex color (ensure it starts with #)
+                        $hex = ltrim($colorHexes[$index], '#');
+                        if (preg_match('/^[0-9a-fA-F]{6}$/', $hex)) {
+                            $colorHex = '#' . $hex;
+                        } elseif (preg_match('/^[0-9a-fA-F]{3}$/', $hex)) {
+                            // Expand 3-digit hex to 6-digit
+                            $colorHex = '#' . $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+                        }
+                    }
+                    
                     \App\Models\VariantAttribute::create([
                         'variant_id' => $variant->id,
                         'attribute_name' => trim($name),
                         'attribute_value' => trim($values[$index]),
+                        'color_hex' => $colorHex,
                     ]);
                 }
             }
@@ -347,10 +391,22 @@ class ProductVariantController extends Controller
 
                     // Create attributes
                     if (!empty($colorName)) {
+                        // Get color hex if provided
+                        $colorHex = null;
+                        if (is_array($colorData) && isset($colorData['hex']) && !empty($colorData['hex'])) {
+                            $colorHex = $colorData['hex'];
+                        }
+                        
+                        // Check if attribute1 is a color attribute (for saving hex)
+                        $isColorAttribute = strtolower($attribute1Name) === 'color' || 
+                                           str_contains(strtolower($attribute1Name), 'color') ||
+                                           str_contains(strtolower($attribute1Name), 'màu');
+                        
                         \App\Models\VariantAttribute::create([
                             'variant_id' => $variant->id,
                             'attribute_name' => $attribute1Name,
                             'attribute_value' => $colorName,
+                            'color_hex' => ($isColorAttribute && $colorHex) ? $colorHex : null,
                         ]);
                     }
                     if (!empty($size)) {
@@ -489,8 +545,13 @@ class ProductVariantController extends Controller
     }
 
     /**
-     * Parse color list with optional custom codes and sizes
-     * Format: "Color Name:CODE|S,M,L,XL" or "Color Name:CODE" or "Color Name"
+     * Parse color list with optional custom codes, hex colors, and sizes
+     * Format: 
+     * - "Color Name" - chỉ tên màu
+     * - "Color Name:#FF0000" - tên màu và mã hex
+     * - "Color Name:#FF0000:CODE" - tên màu, mã hex, và SKU code
+     * - "Color Name:#FF0000:CODE|S,M,L" - đầy đủ với sizes
+     * - "Color Name:CODE" - tên màu và SKU code (giữ tương thích với format cũ)
      */
     private function parseColorList($text)
     {
@@ -515,10 +576,11 @@ class ProductVariantController extends Controller
                 $colorInfo = [
                     'name' => null,
                     'code' => null,
+                    'hex' => null, // Hex color code for frontend display
                     'sizes' => null, // null means use default sizes
                 ];
 
-                // Check if has sizes specification (format: "Color Name:CODE|S,M,L")
+                // Check if has sizes specification (format: "...|S,M,L")
                 if (strpos($part, '|') !== false) {
                     list($colorPart, $sizesPart) = explode('|', $part, 2);
                     $sizesList = array_map('trim', explode(',', trim($sizesPart)));
@@ -529,16 +591,55 @@ class ProductVariantController extends Controller
                     $part = trim($colorPart);
                 }
 
-                // Check if has custom code mapping (format: "Color Name:CODE")
+                // Check if has colon (format: "Color Name:..." or "Color Name:#HEX:CODE")
                 if (strpos($part, ':') !== false) {
-                    list($colorName, $colorCode) = explode(':', $part, 2);
-                    $colorName = trim($colorName);
-                    $colorCode = $this->normalizeSkuSegment($colorCode, '');
-
-                    if (!empty($colorName)) {
-                        $colorInfo['name'] = $colorName;
-                        if (!empty($colorCode)) {
-                            $colorInfo['code'] = $colorCode;
+                    $parts_colon = explode(':', $part);
+                    $colorName = trim($parts_colon[0]);
+                    
+                    if (empty($colorName)) {
+                        continue;
+                    }
+                    
+                    $colorInfo['name'] = $colorName;
+                    
+                    // Check number of colons to determine format
+                    if (count($parts_colon) === 2) {
+                        // Format: "Color Name:VALUE"
+                        $value = trim($parts_colon[1]);
+                        
+                        // Check if value is hex color (starts with #)
+                        if (preg_match('/^#?[0-9a-fA-F]{3,6}$/i', $value)) {
+                            // It's a hex color
+                            $colorInfo['hex'] = ltrim($value, '#');
+                            // Normalize to 6-digit hex
+                            if (strlen($colorInfo['hex']) === 3) {
+                                $hex = $colorInfo['hex'];
+                                $colorInfo['hex'] = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+                            }
+                            $colorInfo['hex'] = '#' . $colorInfo['hex'];
+                        } else {
+                            // It's a SKU code (old format)
+                            $colorInfo['code'] = $this->normalizeSkuSegment($value, '');
+                        }
+                    } elseif (count($parts_colon) >= 3) {
+                        // Format: "Color Name:#HEX:CODE" or "Color Name:#HEX:CODE:..."
+                        $hexValue = trim($parts_colon[1]);
+                        $codeValue = trim($parts_colon[2]);
+                        
+                        // Parse hex color
+                        if (preg_match('/^#?[0-9a-fA-F]{3,6}$/i', $hexValue)) {
+                            $colorInfo['hex'] = ltrim($hexValue, '#');
+                            // Normalize to 6-digit hex
+                            if (strlen($colorInfo['hex']) === 3) {
+                                $hex = $colorInfo['hex'];
+                                $colorInfo['hex'] = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+                            }
+                            $colorInfo['hex'] = '#' . $colorInfo['hex'];
+                        }
+                        
+                        // Parse SKU code
+                        if (!empty($codeValue)) {
+                            $colorInfo['code'] = $this->normalizeSkuSegment($codeValue, '');
                         }
                     }
                 } else {

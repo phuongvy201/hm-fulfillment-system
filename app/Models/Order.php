@@ -10,11 +10,13 @@ class Order extends Model
 {
     protected $fillable = [
         'order_number',
+        'source',
         'user_id',
         'workshop_id',
         'workshop_order_id',
         'tracking_number',
         'tracking_url',
+        'tiktok_label_url',
         'status',
         'payment_status',
         'total_amount',

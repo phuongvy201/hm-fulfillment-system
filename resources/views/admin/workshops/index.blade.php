@@ -168,7 +168,15 @@
                             </div>
 
                             <!-- Right: Actions -->
-                            <div class="flex items-center gap-2 shrink-0">
+                            <div class="flex items-center gap-2 shrink-0 flex-wrap">
+                                @if($workshop->api_enabled && (auth()->user()->isSuperAdmin() || auth()->user()->hasRole('fulfillment-staff')))
+                                <a href="{{ route('admin.workshops.orders.index', $workshop) }}" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all border" style="color: #059669; border-color: #D1FAE5; background-color: #ECFDF5;" onmouseover="this.style.backgroundColor='#D1FAE5'; this.style.borderColor='#059669';" onmouseout="this.style.backgroundColor='#ECFDF5'; this.style.borderColor='#D1FAE5';">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                                    </svg>
+                                    View Orders
+                                </a>
+                                @endif
                                 <a href="{{ route('admin.workshops.show', $workshop) }}" class="inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all border" style="color: #2563EB; border-color: #DBEAFE; background-color: #EFF6FF;" onmouseover="this.style.backgroundColor='#DBEAFE'; this.style.borderColor='#2563EB';" onmouseout="this.style.backgroundColor='#EFF6FF'; this.style.borderColor='#DBEAFE';">
                                     <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>

@@ -193,7 +193,7 @@
                                 <div class="image-card existing-image relative group rounded-lg overflow-hidden" 
                                      data-image-id="{{ $image->id }}"
                                      style="border: {{ $image->is_primary ? '2px solid #F7961D' : '1px solid #E2E8F0' }}; box-shadow: {{ $image->is_primary ? '0 0 0 2px rgba(247, 150, 29, 0.1)' : 'none' }};">
-                                    <img src="{{ Storage::url($image->image_path) }}" alt="Product Image" class="w-full h-32 object-cover" style="{{ !$image->is_primary ? 'filter: grayscale(0.2);' : '' }}">
+                                    <img src="{{ $image->url }}" alt="Product Image" class="w-full h-32 object-cover" style="{{ !$image->is_primary ? 'filter: grayscale(0.2);' : '' }}">
                             @if($image->is_primary)
                                         <div class="absolute top-2 left-2 px-2 py-0.5 text-[10px] font-bold text-white rounded uppercase tracking-wider" style="background-color: #F7961D;">
                                             Primary
@@ -201,17 +201,22 @@
                                     @endif
                                     <div class="image-actions absolute inset-0 flex items-center justify-center gap-2 opacity-0 transition-opacity" style="background-color: rgba(0, 0, 0, 0.4);">
                                         @if(!$image->is_primary)
-                                            <a href="{{ route('admin.products.images.set-primary', [$product, $image]) }}" 
-                                               class="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-                                               style="background-color: #FFFFFF; color: #F7961D;"
-                                               onmouseover="this.style.backgroundColor='#FED7AA';"
-                                               onmouseout="this.style.backgroundColor='#FFFFFF';"
-                                               title="Set as primary image"
-                                               onclick="return confirm('Set this as primary image?');">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
-                                                </svg>
-                                            </a>
+                                            <form action="{{ route('admin.products.images.set-primary', [$product, $image]) }}" 
+                                                  method="POST" 
+                                                  class="inline"
+                                                  onsubmit="return confirm('Set this as primary image?');">
+                                                @csrf
+                                                <button type="submit"
+                                                        class="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+                                                        style="background-color: #FFFFFF; color: #F7961D;"
+                                                        onmouseover="this.style.backgroundColor='#FED7AA';"
+                                                        onmouseout="this.style.backgroundColor='#FFFFFF';"
+                                                        title="Set as primary image">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path>
+                                                    </svg>
+                                                </button>
+                                            </form>
                             @endif
                                         <form method="POST" action="{{ route('admin.products.images.delete', [$product, $image]) }}" class="inline" onsubmit="return confirm('Delete this image?');">
                                     @csrf

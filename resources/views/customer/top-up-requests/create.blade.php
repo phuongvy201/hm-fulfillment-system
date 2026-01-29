@@ -11,39 +11,39 @@
 
 @section('content')
 <div class="max-w-6xl mx-auto">
-    <!-- Tabs Navigation -->
+        <!-- Tabs Navigation -->
     <div class="flex flex-wrap gap-2 mb-8 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-xl w-fit">
         @foreach($paymentMethods as $index => $method)
-            <button 
-                type="button"
-                onclick="switchTab('{{ $method->slug }}')"
-                id="tab-{{ $method->slug }}"
+                    <button 
+                        type="button"
+                        onclick="switchTab('{{ $method->slug }}')"
+                        id="tab-{{ $method->slug }}"
                 class="px-5 py-2.5 rounded-lg text-sm font-medium transition-colors tab-button {{ $index === 0 ? 'bg-white dark:bg-slate-700 shadow-sm text-primary font-semibold' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white' }}"
-                data-method-slug="{{ $method->slug }}"
-            >
-                {{ $method->name }}
-            </button>
-        @endforeach
-    </div>
+                        data-method-slug="{{ $method->slug }}"
+                    >
+                        {{ $method->name }}
+                    </button>
+                @endforeach
+        </div>
 
-    @foreach($paymentMethods as $index => $method)
-        <div id="content-{{ $method->slug }}" class="tab-content {{ $index === 0 ? '' : 'hidden' }}" data-method-id="{{ $method->id }}">
-            <!-- Exchange Rate (for Bank Vietnam) -->
-            @if($method->type === 'bank_transfer' && $method->exchange_rate)
+            @foreach($paymentMethods as $index => $method)
+                <div id="content-{{ $method->slug }}" class="tab-content {{ $index === 0 ? '' : 'hidden' }}" data-method-id="{{ $method->id }}">
+                    <!-- Exchange Rate (for Bank Vietnam) -->
+                    @if($method->type === 'bank_transfer' && $method->exchange_rate)
                 <div class="mb-8 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-xl p-4 flex items-center gap-3">
                     <div class="bg-blue-500 text-white rounded-full p-1 flex">
                         <span class="material-symbols-outlined text-[18px]">currency_exchange</span>
                     </div>
                     <p class="text-sm font-medium text-blue-700 dark:text-blue-400">
                         Exchange rate today: <span class="font-bold">$1.00 = {{ number_format($method->exchange_rate, 0) }}₫</span>
-                    </p>
-                </div>
-            @endif
+                            </p>
+                        </div>
+                    @endif
 
             <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
                 <!-- Left Column: Bank Info / QR Code (2 columns) -->
                 <div class="lg:col-span-2 space-y-6">
-                    @if($method->type === 'bank_transfer')
+                            @if($method->type === 'bank_transfer')
                         <!-- Bank Information Card -->
                         <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden shadow-sm">
                             <div class="bg-slate-50 dark:bg-slate-800/50 p-4 border-b border-slate-200 dark:border-slate-700">
@@ -51,7 +51,7 @@
                                     <span class="material-symbols-outlined text-primary">account_balance</span>
                                     Bank Information
                                 </h3>
-                            </div>
+                                        </div>
                             <div class="p-6 space-y-6">
                                 <!-- QR Code -->
                                 @if($method->qr_code)
@@ -129,57 +129,57 @@
                                 </p>
                             </div>
                         </div>
-                    @else
-                        <!-- Payment Gateway Account Info -->
-                        @if($method->account_number)
+                            @else
+                                <!-- Payment Gateway Account Info -->
+                                @if($method->account_number)
                             <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
                                 <h3 class="font-bold flex items-center gap-2 mb-4">
                                     <span class="material-symbols-outlined text-primary">account_balance</span>
                                     Account Information
                                 </h3>
-                                <div class="space-y-4">
-                                    @if($method->type === 'worldfirst')
-                                        <div class="flex items-center justify-between">
+                                        <div class="space-y-4">
+                                            @if($method->type === 'worldfirst')
+                                                <div class="flex items-center justify-between">
                                             <span class="text-xs text-slate-500 font-medium">Account Number:</span>
-                                            <div class="flex items-center gap-2">
+                                                    <div class="flex items-center gap-2">
                                                 <span class="text-sm font-bold font-mono">{{ $method->account_number }}</span>
-                                                <button 
-                                                    type="button"
-                                                    onclick="copyToClipboard('{{ $method->account_number }}', 'account-number-{{ $method->id }}')"
+                                                        <button 
+                                                            type="button"
+                                                            onclick="copyToClipboard('{{ $method->account_number }}', 'account-number-{{ $method->id }}')"
                                                     class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors text-primary"
-                                                    id="account-number-{{ $method->id }}"
-                                                >
+                                                            id="account-number-{{ $method->id }}"
+                                                        >
                                                     <span class="material-symbols-outlined text-[18px]">content_copy</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    @else
-                                        <div class="flex items-center justify-between">
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <div class="flex items-center justify-between">
                                             <span class="text-xs text-slate-500 font-medium">Email:</span>
-                                            <div class="flex items-center gap-2">
+                                                    <div class="flex items-center gap-2">
                                                 <span class="text-sm font-bold">{{ $method->account_number }}</span>
-                                                <button 
-                                                    type="button"
-                                                    onclick="copyToClipboard('{{ $method->account_number }}', 'account-number-{{ $method->id }}')"
+                                                        <button 
+                                                            type="button"
+                                                            onclick="copyToClipboard('{{ $method->account_number }}', 'account-number-{{ $method->id }}')"
                                                     class="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors text-primary"
-                                                    id="account-number-{{ $method->id }}"
-                                                >
+                                                            id="account-number-{{ $method->id }}"
+                                                        >
                                                     <span class="material-symbols-outlined text-[18px]">content_copy</span>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    @endif
-                                    @if($method->account_holder)
-                                        <div class="flex items-center justify-between">
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                            @if($method->account_holder)
+                                                <div class="flex items-center justify-between">
                                             <span class="text-xs text-slate-500 font-medium">Account Holder:</span>
                                             <span class="text-sm font-bold">{{ $method->account_holder }}</span>
+                                                </div>
+                                            @endif
                                         </div>
-                                    @endif
-                                </div>
-                            </div>
-                        @endif
-                        
-                        <!-- Payment Gateway Instructions -->
+                                    </div>
+                                @endif
+                                
+                                <!-- Payment Gateway Instructions -->
                         @if($method->instructions)
                             <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm">
                                 <h3 class="font-bold flex items-center gap-2 mb-4">
@@ -187,10 +187,10 @@
                                     Payment Instructions
                                 </h3>
                                 <p class="text-sm text-slate-600 dark:text-slate-400">{{ $method->instructions }}</p>
-                            </div>
+                                </div>
                         @endif
-                    @endif
-                </div>
+                            @endif
+                        </div>
 
                 <!-- Right Column: Form (3 columns) -->
                 <div class="lg:col-span-3">
@@ -200,46 +200,46 @@
                             Top-up Details
                         </h3>
                         <form method="POST" action="{{ route('customer.top-up-requests.store') }}" enctype="multipart/form-data" id="topup-form-{{ $method->slug }}" class="space-y-6">
-                            @csrf
-                            <input type="hidden" name="payment_method" value="{{ $method->type }}">
-                            <input type="hidden" name="payment_method_id" value="{{ $method->id }}">
-                            <input type="hidden" name="currency" value="{{ $method->currency }}">
-                            <input type="hidden" name="transaction_code" id="transaction-code-{{ $method->slug }}" value="{{ $transactionCode }}">
+                                @csrf
+                                <input type="hidden" name="payment_method" value="{{ $method->type }}">
+                                <input type="hidden" name="payment_method_id" value="{{ $method->id }}">
+                                <input type="hidden" name="currency" value="{{ $method->currency }}">
+                                <input type="hidden" name="transaction_code" id="transaction-code-{{ $method->slug }}" value="{{ $transactionCode }}">
 
-                            <!-- Amount Input -->
-                            <div>
+                                    <!-- Amount Input -->
+                                    <div>
                                 <label class="block text-sm font-semibold mb-2">
                                     Amount ({{ $method->currency }}) <span class="text-red-500">*</span>
-                                </label>
+                                        </label>
                                 <div class="relative group">
                                     @if($method->currency === 'USD')
                                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-medium">$</span>
                                     @endif
-                                    <input 
-                                        type="number" 
-                                        name="amount" 
-                                        step="0.01" 
-                                        min="{{ $method->min_amount }}"
-                                        @if($method->max_amount) max="{{ $method->max_amount }}" @endif
-                                        required
+                                        <input 
+                                            type="number" 
+                                            name="amount" 
+                                            step="0.01" 
+                                            min="{{ $method->min_amount }}"
+                                            @if($method->max_amount) max="{{ $method->max_amount }}" @endif
+                                            required
                                         class="w-full {{ $method->currency === 'USD' ? 'pl-8' : 'pl-4' }} pr-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all text-lg font-medium outline-none"
-                                        placeholder="0.00"
-                                    >
+                                            placeholder="0.00"
+                                        >
                                 </div>
                                 <p class="mt-2 text-xs text-slate-500 flex items-center gap-1">
                                     <span class="material-symbols-outlined text-[14px]">error_outline</span>
                                     Minimum top-up amount is {{ $method->currency }} {{ number_format($method->min_amount, 2) }}
-                                    @if($method->max_amount)
-                                        . Maximum is {{ $method->currency }} {{ number_format($method->max_amount, 2) }}
-                                    @endif
-                                </p>
-                            </div>
+                                            @if($method->max_amount)
+                                                . Maximum is {{ $method->currency }} {{ number_format($method->max_amount, 2) }}
+                                            @endif
+                                        </p>
+                                    </div>
 
-                            <!-- Transfer Description / Transaction Code -->
-                            <div>
+                                    <!-- Transfer Description / Transaction Code -->
+                                    <div>
                                 <label class="block text-sm font-semibold mb-2">
-                                    Transfer Description
-                                </label>
+                                            Transfer Description
+                                        </label>
                                 <div class="flex gap-2">
                                     <input 
                                         type="text" 
@@ -248,68 +248,68 @@
                                         id="txn-code-display-{{ $method->slug }}"
                                         value="{{ $transactionCode }}"
                                     >
-                                    <button 
-                                        type="button"
-                                        onclick="copyTransactionCode('{{ $method->slug }}')"
+                                            <button 
+                                                type="button"
+                                                onclick="copyTransactionCode('{{ $method->slug }}')"
                                         class="px-5 py-3 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-xl font-semibold text-sm flex items-center gap-2 transition-all"
-                                        id="txn-code-btn-{{ $method->slug }}"
-                                    >
+                                                id="txn-code-btn-{{ $method->slug }}"
+                                            >
                                         <span class="material-symbols-outlined text-[20px]">content_copy</span>
-                                        Copy
-                                    </button>
-                                </div>
+                                                Copy
+                                            </button>
+                                        </div>
                                 <p class="mt-2 text-[11px] text-slate-500 flex items-start gap-1">
                                     <span class="material-symbols-outlined text-[14px] mt-0.5">info</span>
                                     Please copy this exact transaction code and include it in your transfer note to help us verify and track the payment instantly.
-                                </p>
-                            </div>
+                                            </p>
+                                    </div>
 
-                            <!-- Proof File -->
-                            <div>
+                                    <!-- Proof File -->
+                                    <div>
                                 <label class="block text-sm font-semibold mb-2">
-                                    Proof of Payment <span class="text-red-500">*</span>
-                                </label>
+                                            Proof of Payment <span class="text-red-500">*</span>
+                                        </label>
                                 <div class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl p-8 flex flex-col items-center justify-center bg-slate-50/50 dark:bg-slate-800/20 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer group" onclick="document.getElementById('proof-file-{{ $method->slug }}').click()">
                                     <div class="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3 group-hover:scale-110 transition-transform">
                                         <span class="material-symbols-outlined text-[32px]">cloud_upload</span>
                                     </div>
                                     <p class="text-sm font-medium">Click to upload or drag and drop</p>
                                     <p class="text-xs text-slate-500 mt-1">Accept: JPG, PNG, PDF (max 5MB)</p>
-                                    <input 
-                                        type="file" 
-                                        name="proof_file" 
+                                        <input 
+                                            type="file" 
+                                            name="proof_file" 
                                         id="proof-file-{{ $method->slug }}"
-                                        accept="image/*,.pdf"
-                                        required
+                                            accept="image/*,.pdf"
+                                            required
                                         class="hidden"
                                         onchange="handleFileSelect(this, '{{ $method->slug }}')"
-                                    >
+                                        >
                                 </div>
                                 <div id="file-name-{{ $method->slug }}" class="mt-2 text-sm text-slate-600 dark:text-slate-400 hidden"></div>
-                            </div>
+                                    </div>
 
-                            <!-- Notes -->
-                            <div>
+                                    <!-- Notes -->
+                                    <div>
                                 <label class="block text-sm font-semibold mb-2">
-                                    Notes (Optional)
-                                </label>
-                                <textarea 
-                                    name="notes" 
-                                    rows="3"
+                                            Notes (Optional)
+                                        </label>
+                                        <textarea 
+                                            name="notes" 
+                                            rows="3"
                                     class="w-full px-4 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none resize-none"
-                                    placeholder="Additional information about the transaction..."
-                                ></textarea>
-                            </div>
+                                            placeholder="Additional information about the transaction..."
+                                        ></textarea>
+                                    </div>
 
-                            <!-- Submit Button -->
-                            <button 
-                                type="submit"
+                                    <!-- Submit Button -->
+                                    <button 
+                                        type="submit"
                                 class="w-full bg-primary hover:bg-orange-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
-                            >
+                                    >
                                 <span>Submit Top-up Request</span>
                                 <span class="material-symbols-outlined">arrow_forward</span>
-                            </button>
-                        </form>
+                                    </button>
+                            </form>
                     </div>
                 </div>
             </div>

@@ -72,7 +72,7 @@
                 <a href="{{ route('products.show', $product->slug) }}" class="bg-white border border-neutral-200 rounded-2xl overflow-hidden shadow-lg shadow-black/5 hover:-translate-y-1 transition-all flex flex-col">
                     <div class="relative aspect-4/5 bg-neutral-100 overflow-hidden">
                         @if($primaryImage)
-                            <img class="w-full h-full object-cover" src="{{ \Illuminate\Support\Facades\Storage::url($primaryImage->image_path) }}" alt="{{ $product->name }}">
+                            <img class="w-full h-full object-cover" src="{{ $primaryImage->url }}" alt="{{ $product->name }}">
                         @else
                             <div class="w-full h-full flex items-center justify-center text-neutral-400">
                                 <span class="material-symbols-outlined text-5xl">photo</span>

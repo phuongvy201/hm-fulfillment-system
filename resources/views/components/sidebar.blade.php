@@ -27,7 +27,16 @@
                 </a>
             </li>
             
-            @if(auth()->user()->isSuperAdmin())
+            @if(auth()->user()->hasRole('customer') && auth()->user()->hasAnyPermission(['orders.view', 'orders.create']))
+            <li>
+                <a href="{{ route('customer.orders.index') }}" class="menu-item {{ $activeMenu === 'orders' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Orders
+                </a>
+            </li>
+            @elseif(auth()->user()->hasAnyPermission(['orders.view', 'orders.create']))
             <li>
                 <a href="{{ route('admin.orders.index') }}" class="menu-item {{ $activeMenu === 'orders' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,8 +47,57 @@
             </li>
             @endif
 
-            <!-- Finance Management -->
-            @canAnyPermission(['top-up.view', 'top-up.create', 'credit.view', 'wallet.view'])
+            {{-- Customer: Design Tasks --}}
+            @if(auth()->user()->hasRole('customer') && !auth()->user()->isSuperAdmin() && !auth()->user()->isAdmin())
+            <li>
+                <a href="{{ route('customer.design-tasks.index') }}" class="menu-item {{ $activeMenu === 'design-tasks' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
+                    <span class="material-symbols-outlined text-xl">brush</span>
+                    Design Tasks
+                </a>
+            </li>
+            @endif
+
+            {{-- Admin: Design Tasks --}}
+            @if(auth()->user()->isAdmin() || auth()->user()->isSuperAdmin())
+            <li>
+                <a href="{{ route('admin.design-tasks.index') }}" class="menu-item {{ $activeMenu === 'design-tasks' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
+                    <span class="material-symbols-outlined text-xl">brush</span>
+                    Design Tasks
+                </a>
+            </li>
+            @endif
+
+            {{-- Customer: My Wallet --}}
+            @if(auth()->user()->hasRole('customer') && !auth()->user()->isSuperAdmin() && !auth()->user()->isAdmin())
+            <li class="pt-4">
+                <p class="px-4 py-2 text-xs font-semibold uppercase" style="color: #9CA3AF;">Finance Management</p>
+            </li>
+            <li>
+                <a href="{{ route('customer.wallet.index') }}" class="menu-item {{ $activeMenu === 'wallet' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    My Wallet
+                </a>
+            </li>
+            @endif
+
+            @if(auth()->user()->isAdmin())
+            @canPermission('products.view')
+            <li>
+                <a href="{{ route('admin.products.index') }}" class="menu-item {{ $activeMenu === 'products' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                    Products
+                </a>
+            </li>
+            @endcanPermission
+            @endif
+
+            <!-- Finance Management - Only for Admin/Super Admin -->
+            @if(auth()->user()->isAdmin())
+            @canAnyPermission(['top-up.view', 'credit.view', 'wallet.view'])
             <li class="pt-4">
                 <p class="px-4 py-2 text-xs font-semibold uppercase" style="color: #9CA3AF;">Finance Management</p>
             </li>
@@ -86,10 +144,19 @@
                     Currency & Exchange Rates
                 </a>
             </li>
+            <li>
+                <a href="{{ route('admin.design-prices.users.index') }}" class="menu-item {{ $activeMenu === 'design-prices' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
+                    <span class="material-symbols-outlined text-xl">attach_money</span>
+                    Design Prices
+                </a>
+            </li>
             @endif
             @endcanAnyPermission
-            <!-- Product Management -->
-            @canAnyPermission(['products.view', 'markets.view', 'workshops.view'])
+            @endif
+
+            <!-- Product Management - Only for Admin/Super Admin -->
+            @if(auth()->user()->isAdmin())
+            @canAnyPermission(['markets.view', 'workshops.view'])
             <li class="pt-4">
                 <p class="px-4 py-2 text-xs font-semibold uppercase" style="color: #9CA3AF;">Product Management</p>
             </li>
@@ -115,20 +182,11 @@
                 </a>
             </li>
             @endcanPermission
-
-            @canPermission('products.view')
-            <li>
-                <a href="{{ route('admin.products.index') }}" class="menu-item {{ $activeMenu === 'products' ? 'active' : '' }} flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                    </svg>
-                    Products
-                </a>
-            </li>
-            @endcanPermission
             @endcanAnyPermission
+            @endif
 
-            <!-- Pricing Management -->
+            <!-- Pricing Management - Only for Admin/Super Admin -->
+            @if(auth()->user()->isAdmin())
             @canAnyPermission(['pricing-tiers.view', 'pricing-tiers.users'])
             <li class="pt-4">
                 <p class="px-4 py-2 text-xs font-semibold uppercase" style="color: #9CA3AF;">Tier Management</p>
@@ -156,9 +214,10 @@
             </li>
             @endcanPermission
             @endcanAnyPermission
-            
+            @endif
 
-            <!-- Operations -->
+            <!-- Operations - Only for Admin/Super Admin -->
+            @if(auth()->user()->isAdmin())
             @canPermission('products.view')
             <li class="pt-4">
                 <p class="px-4 py-2 text-xs font-semibold uppercase" style="color: #9CA3AF;">Operations</p>
@@ -192,7 +251,10 @@
                 </a>
             </li>
             @endcanPermission
-            <!-- Administration -->
+            @endif
+
+            <!-- Administration - Only for Admin/Super Admin -->
+            @if(auth()->user()->isAdmin())
             @canAnyPermission(['users.view', 'permissions.view'])
             <li class="pt-4">
                 <p class="px-4 py-2 text-xs font-semibold uppercase" style="color: #9CA3AF;">Administration</p>
@@ -251,6 +313,7 @@
             </li>
             @endif
             @endcanAnyPermission
+            @endif
         </ul>
     </nav>
 

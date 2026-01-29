@@ -77,10 +77,11 @@
                                     name="attribute_names[]" 
                                     value="{{ old("attribute_names.{$loop->index}", $attr->attribute_name) }}"
                                     placeholder="Attribute Name (e.g., Color, Size, Material)"
-                                    class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all"
+                                    class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all attribute-name-input"
                                     style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
                                     onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
                                     onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
+                                    oninput="toggleColorHexInput(this)"
                                 >
                                 <input 
                                     type="text" 
@@ -91,6 +92,19 @@
                                     style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
                                     onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
                                     onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
+                                >
+                                @php
+                                    $isColor = strtolower($attr->attribute_name) === 'color' || 
+                                               str_contains(strtolower($attr->attribute_name), 'color') ||
+                                               str_contains(strtolower($attr->attribute_name), 'màu');
+                                @endphp
+                                <input 
+                                    type="color" 
+                                    name="color_hexes[]" 
+                                    value="{{ old("color_hexes.{$loop->index}", $attr->color_hex ?? '#000000') }}"
+                                    class="color-hex-input {{ $isColor ? '' : 'hidden' }} w-20 h-10 border rounded-lg cursor-pointer"
+                                    style="border-color: #D1D5DB;"
+                                    title="Mã màu hex cho frontend"
                                 >
                                 <button type="button" onclick="removeAttributeField(this)" class="px-3 py-2 rounded-lg text-sm font-medium transition-all border" style="color: #DC2626; border-color: #FEE2E2; background-color: #FEF2F2;" onmouseover="this.style.backgroundColor='#FEE2E2';" onmouseout="this.style.backgroundColor='#FEF2F2';">
                                     Remove
@@ -103,10 +117,11 @@
                                     type="text" 
                                     name="attribute_names[]" 
                                     placeholder="Attribute Name (e.g., Color, Size, Material)"
-                                    class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all"
+                                    class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all attribute-name-input"
                                     style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
                                     onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
                                     onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
+                                    oninput="toggleColorHexInput(this)"
                                 >
                                 <input 
                                     type="text" 
@@ -116,6 +131,14 @@
                                     style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
                                     onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
                                     onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
+                                >
+                                <input 
+                                    type="color" 
+                                    name="color_hexes[]" 
+                                    value="#000000"
+                                    class="color-hex-input hidden w-20 h-10 border rounded-lg cursor-pointer"
+                                    style="border-color: #D1D5DB;"
+                                    title="Mã màu hex cho frontend"
                                 >
                                 <button type="button" onclick="removeAttributeField(this)" class="px-3 py-2 rounded-lg text-sm font-medium transition-all border" style="color: #DC2626; border-color: #FEE2E2; background-color: #FEF2F2;" onmouseover="this.style.backgroundColor='#FEE2E2';" onmouseout="this.style.backgroundColor='#FEF2F2';">
                                     Remove
@@ -157,10 +180,11 @@
                 type="text" 
                 name="attribute_names[]" 
                 placeholder="Attribute Name (e.g., Color, Size, Material)"
-                class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all"
+                class="flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all attribute-name-input"
                 style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
                 onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
                 onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
+                oninput="toggleColorHexInput(this)"
             >
             <input 
                 type="text" 
@@ -170,6 +194,14 @@
                 style="border-color: #D1D5DB; color: #111827; background-color: #FFFFFF;"
                 onfocus="this.style.borderColor='#2563EB'; this.style.boxShadow='0 0 0 3px rgba(37, 99, 235, 0.1)';"
                 onblur="this.style.borderColor='#D1D5DB'; this.style.boxShadow='none';"
+            >
+            <input 
+                type="color" 
+                name="color_hexes[]" 
+                value="#000000"
+                class="color-hex-input hidden w-20 h-10 border rounded-lg cursor-pointer"
+                style="border-color: #D1D5DB;"
+                title="Mã màu hex cho frontend"
             >
             <button type="button" onclick="removeAttributeField(this)" class="px-3 py-2 rounded-lg text-sm font-medium transition-all border" style="color: #DC2626; border-color: #FEE2E2; background-color: #FEF2F2;" onmouseover="this.style.backgroundColor='#FEE2E2';" onmouseout="this.style.backgroundColor='#FEF2F2';">
                 Remove
@@ -184,6 +216,31 @@
             button.closest('.attribute-row').remove();
         }
     }
+
+    function toggleColorHexInput(input) {
+        const row = input.closest('.attribute-row');
+        const colorHexInput = row.querySelector('.color-hex-input');
+        const attrName = input.value.toLowerCase().trim();
+        
+        // Kiểm tra nếu là color attribute
+        const isColor = attrName === 'color' || 
+                       attrName === 'màu' || 
+                       attrName.includes('color') || 
+                       attrName.includes('màu');
+        
+        if (isColor && colorHexInput) {
+            colorHexInput.classList.remove('hidden');
+        } else if (colorHexInput) {
+            colorHexInput.classList.add('hidden');
+        }
+    }
+
+    // Khởi tạo cho các input đã có
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.attribute-name-input').forEach(input => {
+            toggleColorHexInput(input);
+        });
+    });
 </script>
 @endsection
 

@@ -23,7 +23,7 @@ class WorkshopController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('code', 'like', "%{$search}%");
+                    ->orWhere('code', 'like', "%{$search}%");
             });
         }
 
@@ -105,7 +105,7 @@ class WorkshopController extends Controller
             'status' => ['required', 'in:active,inactive'],
             // API Settings
             'api_enabled' => ['nullable', 'boolean'],
-            'api_type' => ['nullable', 'string', 'in:rest,soap,custom'],
+            'api_type' => ['nullable', 'string', 'in:rest,generic_rest,twofifteen,soap,custom'],
             'api_endpoint' => ['nullable', 'url', 'max:500'],
             'api_key' => ['nullable', 'string', 'max:255'],
             'api_secret' => ['nullable', 'string', 'max:255'],

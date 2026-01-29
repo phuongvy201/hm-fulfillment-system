@@ -134,7 +134,7 @@
                 <a href="{{ route('products.show', $product->slug) }}" class="group cursor-pointer" style="text-decoration: none; color: inherit;">
                     <div class="relative aspect-[3/4] bg-white dark:bg-white/5 rounded-2xl overflow-hidden mb-4 border border-[#e6e1db] dark:border-white/10">
                         @if($primaryImage)
-                            <div class="absolute inset-0 bg-center bg-cover transition-transform group-hover:scale-105" style='background-image: url("{{ \Illuminate\Support\Facades\Storage::url($primaryImage->image_path) }}");'></div>
+                            <div class="absolute inset-0 bg-center bg-cover transition-transform group-hover:scale-105" style='background-image: url("{{ $primaryImage->url }}");'></div>
                         @else
                             <div class="absolute inset-0 bg-gradient-to-br from-background-light to-white dark:from-background-dark dark:to-[#2f2417] flex items-center justify-center text-[#6b7280]">
                                 <span class="material-symbols-outlined text-4xl">photo</span>

@@ -12,7 +12,9 @@ use App\Models\PricingTier;
 use App\Models\Market;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Aws\S3\S3Client;
 
 class ProductController extends Controller
 {
@@ -271,20 +273,178 @@ class ProductController extends Controller
         $hasPrimary = $product->images()->where('is_primary', true)->exists();
 
         foreach ($images as $image) {
-            $sortOrder++;
+            try {
+                // Validate file
+                if (!$image->isValid()) {
+                    Log::warning('Invalid image file', [
+                        'product_id' => $product->id,
+                        'file' => $image->getClientOriginalName(),
+                    ]);
+                    continue;
+                }
 
-            // Store image in storage/app/public/products/{product_id}/
-            $path = $image->store("products/{$product->id}", 'public');
+                $sortOrder++;
 
-            ProductImage::create([
-                'product_id' => $product->id,
-                'image_path' => $path,
-                'sort_order' => $sortOrder,
-                'is_primary' => !$hasPrimary && $sortOrder === 1, // First image is primary if none exists
-            ]);
+                // Generate unique filename
+                $fileName = time() . '_' . Str::random(10) . '.' . $image->getClientOriginalExtension();
+                $filePath = "products/images/{$fileName}";
 
-            if (!$hasPrimary && $sortOrder === 1) {
-                $hasPrimary = true;
+                // Check S3 configuration before upload
+                $s3Config = config('filesystems.disks.s3');
+                Log::info('S3 config check', [
+                    'bucket' => $s3Config['bucket'] ?? 'NOT SET',
+                    'region' => $s3Config['region'] ?? 'NOT SET',
+                    'key_set' => !empty($s3Config['key']),
+                    'secret_set' => !empty($s3Config['secret']),
+                ]);
+
+                // Upload to S3 using put() with file contents (more reliable than putFileAs)
+                // This method works better with S3 and allows better error handling
+                $uploaded = false;
+                try {
+                    // Temporarily enable throwing to catch errors
+                    $originalThrow = config('filesystems.disks.s3.throw', false);
+                    config(['filesystems.disks.s3.throw' => true]);
+
+                    // Upload using AWS SDK directly to avoid ACL issues
+                    // Bucket doesn't support ACLs, use bucket policy for public access
+                    $s3Config = config('filesystems.disks.s3');
+
+                    $s3Client = new S3Client([
+                        'version' => 'latest',
+                        'region' => $s3Config['region'],
+                        'credentials' => [
+                            'key' => $s3Config['key'],
+                            'secret' => $s3Config['secret'],
+                        ],
+                        'use_path_style_endpoint' => $s3Config['use_path_style_endpoint'] ?? false,
+                    ]);
+
+                    $result = $s3Client->putObject([
+                        'Bucket' => $s3Config['bucket'],
+                        'Key' => $filePath,
+                        'Body' => file_get_contents($image->getRealPath()),
+                        'ContentType' => $image->getMimeType(),
+                        // Don't set ACL - bucket doesn't support ACLs
+                    ]);
+
+                    $uploaded = $result['@metadata']['statusCode'] === 200;
+
+                    // Restore original throw setting
+                    config(['filesystems.disks.s3.throw' => $originalThrow]);
+
+                    Log::info('Image upload attempt', [
+                        'product_id' => $product->id,
+                        'file_name' => $fileName,
+                        'file_path' => $filePath,
+                        'uploaded' => $uploaded,
+                        'file_size' => $image->getSize(),
+                        'mime_type' => $image->getMimeType(),
+                    ]);
+                } catch (\Aws\S3\Exception\S3Exception $s3Exception) {
+                    Log::error('S3 Exception (AWS)', [
+                        'product_id' => $product->id,
+                        'file_name' => $fileName,
+                        'error' => $s3Exception->getMessage(),
+                        'aws_code' => $s3Exception->getAwsErrorCode(),
+                        'aws_message' => $s3Exception->getAwsErrorMessage(),
+                        'request_id' => $s3Exception->getAwsRequestId(),
+                        'status_code' => $s3Exception->getStatusCode(),
+                    ]);
+                    $uploaded = false;
+                } catch (\League\Flysystem\UnableToWriteFile $flysystemException) {
+                    // Extract underlying S3Exception if available
+                    $previous = $flysystemException->getPrevious();
+                    $awsError = null;
+                    if ($previous instanceof \Aws\S3\Exception\S3Exception) {
+                        $awsError = [
+                            'aws_code' => $previous->getAwsErrorCode(),
+                            'aws_message' => $previous->getAwsErrorMessage(),
+                            'status_code' => $previous->getStatusCode(),
+                        ];
+                    }
+
+                    Log::error('Flysystem UnableToWriteFile', [
+                        'product_id' => $product->id,
+                        'file_name' => $fileName,
+                        'file_path' => $filePath,
+                        'error' => $flysystemException->getMessage(),
+                        'location' => $flysystemException->location(),
+                        'aws_error' => $awsError,
+                        'previous_exception' => $previous ? get_class($previous) : null,
+                    ]);
+                    $uploaded = false;
+                } catch (\Exception $uploadException) {
+                    Log::error('S3 upload exception', [
+                        'product_id' => $product->id,
+                        'file_name' => $fileName,
+                        'error' => $uploadException->getMessage(),
+                        'class' => get_class($uploadException),
+                        'previous' => $uploadException->getPrevious() ? get_class($uploadException->getPrevious()) : null,
+                        'trace' => $uploadException->getTraceAsString(),
+                    ]);
+                    $uploaded = false;
+                }
+
+                // Verify file exists on S3
+                if ($uploaded) {
+                    $exists = Storage::disk('s3')->exists($filePath);
+                    Log::info('File existence check', [
+                        'file_path' => $filePath,
+                        'exists' => $exists,
+                    ]);
+                }
+
+                if ($uploaded) {
+                    try {
+                        $productImage = ProductImage::create([
+                            'product_id' => $product->id,
+                            'image_path' => $filePath,
+                            'sort_order' => $sortOrder,
+                            'is_primary' => !$hasPrimary && $sortOrder === 1, // First image is primary if none exists
+                        ]);
+
+                        Log::info('ProductImage created successfully', [
+                            'product_image_id' => $productImage->id ?? 'N/A',
+                            'image_path' => $productImage->image_path ?? 'N/A',
+                            'product_id' => $product->id,
+                        ]);
+
+                        if (!$hasPrimary && $sortOrder === 1) {
+                            $hasPrimary = true;
+                        }
+                    } catch (\Illuminate\Database\QueryException $dbException) {
+                        Log::error('Database error creating ProductImage', [
+                            'product_id' => $product->id,
+                            'file_path' => $filePath,
+                            'error' => $dbException->getMessage(),
+                            'sql' => $dbException->getSql() ?? 'N/A',
+                        ]);
+                    } catch (\Exception $createException) {
+                        Log::error('Error creating ProductImage', [
+                            'product_id' => $product->id,
+                            'file_path' => $filePath,
+                            'error' => $createException->getMessage(),
+                            'trace' => $createException->getTraceAsString(),
+                        ]);
+                    }
+                } else {
+                    Log::error('S3 upload failed', [
+                        'product_id' => $product->id,
+                        'file_name' => $fileName,
+                        'file_path' => $filePath,
+                        'uploaded' => $uploaded ?? 'N/A',
+                    ]);
+                }
+            } catch (\Exception $e) {
+                // Log error but continue with other images
+                Log::error('Error uploading product image', [
+                    'product_id' => $product->id,
+                    'file' => $image->getClientOriginalName() ?? 'unknown',
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                // Continue with other files instead of failing completely
             }
         }
     }
@@ -314,9 +474,9 @@ class ProductController extends Controller
             return back()->withErrors(['error' => 'Image not found.']);
         }
 
-        // Delete file from storage
-        if (Storage::disk('public')->exists($image->image_path)) {
-            Storage::disk('public')->delete($image->image_path);
+        // Delete file from S3 storage
+        if (Storage::disk('s3')->exists($image->image_path)) {
+            Storage::disk('s3')->delete($image->image_path);
         }
 
         // If this was the primary image, set another one as primary

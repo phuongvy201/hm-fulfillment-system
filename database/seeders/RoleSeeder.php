@@ -49,6 +49,11 @@ class RoleSeeder extends Seeder
                 'slug' => 'support',
                 'description' => 'CSKH - Chăm sóc đơn hàng',
             ],
+            [
+                'name' => 'Seller',
+                'slug' => 'seller',
+                'description' => 'Người bán - Tạo đơn hàng',
+            ],
         ];
 
         foreach ($roles as $role) {

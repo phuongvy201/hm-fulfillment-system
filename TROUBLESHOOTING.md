@@ -69,3 +69,14 @@ Nếu Tailwind utilities không hoạt động, code đã có fallback với:
 - Hardcoded colors trong CSS
 - JavaScript để set style trực tiếp
 
+
+
+
+
+
+
+
+
+
+
+

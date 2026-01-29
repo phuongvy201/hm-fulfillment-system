@@ -18,20 +18,52 @@ Route::middleware('guest')->group(function () {
 
 // Protected routes
 Route::middleware('auth')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
     // Customer routes (non-admin users)
     Route::middleware(\App\Http\Middleware\CheckCustomer::class)->prefix('customer')->name('customer.')->group(function () {
+        // Wallet & Transactions
+        Route::get('wallet', [\App\Http\Controllers\Customer\WalletController::class, 'index'])->name('wallet.index');
+
         // Top-up Requests
         Route::resource('top-up-requests', \App\Http\Controllers\Customer\TopUpRequestController::class)->only(['index', 'create', 'store', 'show']);
 
         // Debt Payment Requests
         Route::resource('debt-payment-requests', \App\Http\Controllers\Customer\DebtPaymentRequestController::class)->only(['index', 'create', 'store', 'show']);
     });
+});
+
+// Customer routes (order creation)
+Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer.')->group(function () {
+    // Orders Import (must be before orders/{order} route to avoid conflict)
+    Route::get('orders/import', [\App\Http\Controllers\Customer\ImportController::class, 'showImportOrders'])->name('orders.import');
+    Route::post('orders/import', [\App\Http\Controllers\Customer\ImportController::class, 'importOrders'])->name('orders.import.store');
+    Route::get('orders/import/sample', [\App\Http\Controllers\Customer\ImportController::class, 'downloadOrderImportSample'])->name('orders.import.sample');
+
+    // Design Tasks
+    Route::resource('design-tasks', \App\Http\Controllers\Admin\DesignTaskController::class);
+    Route::get('design-tasks/calculate-price/{sidesCount}', [\App\Http\Controllers\Admin\DesignTaskController::class, 'calculatePrice'])->name('design-tasks.calculate-price');
+    Route::post('design-tasks/{designTask}/revisions', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'store'])->name('design-revisions.store');
+    Route::post('design-tasks/{designTask}/revisions/{designRevision}/approve', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'approve'])->name('design-revisions.approve');
+    Route::post('design-tasks/{designTask}/revisions/{designRevision}/request-revision', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'requestRevision'])->name('design-revisions.request-revision');
+    Route::post('design-tasks/{designTask}/comments', [\App\Http\Controllers\Admin\DesignCommentController::class, 'store'])->name('design-comments.store');
+    Route::post('design-tasks/{designTask}/comments/{designComment}/mark-read', [\App\Http\Controllers\Admin\DesignCommentController::class, 'markAsRead'])->name('design-comments.mark-read');
+    Route::post('design-tasks/{designTask}/comments/mark-all-read', [\App\Http\Controllers\Admin\DesignCommentController::class, 'markAllAsRead'])->name('design-comments.mark-all-read');
+    Route::delete('design-tasks/{designTask}/comments/{designComment}', [\App\Http\Controllers\Admin\DesignCommentController::class, 'destroy'])->name('design-comments.destroy');
+
+    // Bulk delete route must be BEFORE any orders/{order} route to avoid route conflict
+    Route::delete('orders/bulk-destroy', [\App\Http\Controllers\Admin\OrderController::class, 'bulkDestroy'])->name('orders.bulk-destroy');
+    // Export orders route must be before resource route
+    Route::get('orders/export', [\App\Http\Controllers\Admin\OrderController::class, 'export'])->name('orders.export');
+    Route::get('orders', [\App\Http\Controllers\Admin\OrderController::class, 'index'])->name('orders.index');
+    Route::get('orders/create', [\App\Http\Controllers\Admin\OrderController::class, 'create'])->name('orders.create');
+    Route::post('orders', [\App\Http\Controllers\Admin\OrderController::class, 'store'])->name('orders.store');
+    Route::get('orders/{order}', [\App\Http\Controllers\Admin\OrderController::class, 'show'])->name('orders.show');
+    Route::get('orders/{order}/edit', [\App\Http\Controllers\Admin\OrderController::class, 'edit'])->name('orders.edit');
+    Route::put('orders/{order}', [\App\Http\Controllers\Admin\OrderController::class, 'update'])->name('orders.update');
+    Route::post('orders/{order}/cancel', [\App\Http\Controllers\Admin\OrderController::class, 'cancel'])->name('orders.cancel');
 });
 
 // Super Admin only routes
@@ -46,12 +78,57 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('admin')->name('admin.')
     Route::resource('workshops', \App\Http\Controllers\Admin\WorkshopController::class);
     Route::post('workshops/{workshop}/test-api', [\App\Http\Controllers\Admin\WorkshopController::class, 'testApi'])->name('workshops.test-api');
 
-    // Orders
-    Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class);
+    // Workshop Orders Management
+    Route::get('workshops/{workshop}/orders', [\App\Http\Controllers\Admin\WorkshopOrderController::class, 'index'])->name('workshops.orders.index');
+    Route::get('workshops/{workshop}/orders/{orderId}', [\App\Http\Controllers\Admin\WorkshopOrderController::class, 'show'])->name('workshops.orders.show');
+    Route::get('workshops/{workshop}/orders/{orderId}/edit', [\App\Http\Controllers\Admin\WorkshopOrderController::class, 'edit'])->name('workshops.orders.edit');
+    Route::put('workshops/{workshop}/orders/{orderId}', [\App\Http\Controllers\Admin\WorkshopOrderController::class, 'update'])->name('workshops.orders.update');
+    Route::post('workshops/{workshop}/orders/{orderId}/cancel', [\App\Http\Controllers\Admin\WorkshopOrderController::class, 'cancel'])->name('workshops.orders.cancel');
+    Route::post('workshops/{workshop}/orders/sync', [\App\Http\Controllers\Admin\WorkshopOrderController::class, 'sync'])->name('workshops.orders.sync');
+
+    // Orders Import (must be before resource route to avoid conflict)
+    Route::get('orders/import', [\App\Http\Controllers\Admin\ImportController::class, 'showImportOrders'])->name('orders.import');
+    Route::post('orders/import', [\App\Http\Controllers\Admin\ImportController::class, 'importOrders'])->name('orders.import.store');
+    Route::get('orders/import/sample', [\App\Http\Controllers\Admin\ImportController::class, 'downloadOrderImportSample'])->name('orders.import.sample');
+    Route::get('orders/import-files', [\App\Http\Controllers\Admin\ImportController::class, 'listImportFiles'])->name('orders.import-files');
+    Route::get('orders/import-files/{importFile}', [\App\Http\Controllers\Admin\ImportController::class, 'showImportFile'])->name('orders.import-files.show');
+    Route::post('orders/import-files/{importFile}/submit-orders', [\App\Http\Controllers\Admin\ImportController::class, 'submitOrdersFromImportFile'])->name('orders.import-files.submit-orders');
+
+    // Orders (full access for super-admin) - Will override customer routes if user is super-admin
+    // Bulk delete route must be before resource route to avoid route conflict
+    Route::delete('orders/bulk-destroy', [\App\Http\Controllers\Admin\OrderController::class, 'bulkDestroy'])->name('orders.bulk-destroy');
+    Route::post('orders/bulk-submit', [\App\Http\Controllers\Admin\OrderController::class, 'bulkSubmit'])->name('orders.bulk-submit');
+    // Export orders route must be before resource route
+    Route::get('orders/export', [\App\Http\Controllers\Admin\OrderController::class, 'export'])->name('orders.export');
+    // Exclude destroy from resource to avoid conflict with bulk-destroy
+    Route::resource('orders', \App\Http\Controllers\Admin\OrderController::class)->except(['destroy']);
     Route::post('orders/{order}/submit', [\App\Http\Controllers\Admin\OrderController::class, 'submit'])->name('orders.submit');
     Route::post('orders/{order}/tracking', [\App\Http\Controllers\Admin\OrderController::class, 'getTracking'])->name('orders.tracking');
     Route::post('orders/{order}/update-status', [\App\Http\Controllers\Admin\OrderController::class, 'updateStatus'])->name('orders.update-status');
+    Route::post('orders/{order}/cancel', [\App\Http\Controllers\Admin\OrderController::class, 'cancel'])->name('orders.cancel');
+    Route::get('orders/{order}/print-label', [\App\Http\Controllers\Admin\OrderController::class, 'printLabel'])->name('orders.print-label');
 
+    // Design Tasks
+    Route::resource('design-tasks', \App\Http\Controllers\Admin\DesignTaskController::class);
+    Route::get('design-tasks/calculate-price/{sidesCount}', [\App\Http\Controllers\Admin\DesignTaskController::class, 'calculatePrice'])->name('design-tasks.calculate-price');
+    Route::post('design-tasks/{designTask}/join', [\App\Http\Controllers\Admin\DesignTaskController::class, 'join'])->name('design-tasks.join');
+    Route::post('design-tasks/{designTask}/update-status', [\App\Http\Controllers\Admin\DesignTaskController::class, 'updateStatus'])->name('design-tasks.update-status');
+
+    // Design Revisions
+    Route::post('design-tasks/{designTask}/revisions', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'store'])->name('design-revisions.store');
+    Route::post('design-tasks/{designTask}/revisions/{designRevision}/approve', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'approve'])->name('design-revisions.approve');
+    Route::post('design-tasks/{designTask}/revisions/{designRevision}/request-revision', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'requestRevision'])->name('design-revisions.request-revision');
+    Route::delete('design-tasks/{designTask}/revisions/{designRevision}', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'destroy'])->name('design-revisions.destroy');
+
+    // Design Comments
+    Route::post('design-tasks/{designTask}/comments', [\App\Http\Controllers\Admin\DesignCommentController::class, 'store'])->name('design-comments.store');
+    Route::post('design-tasks/{designTask}/comments/{designComment}/mark-read', [\App\Http\Controllers\Admin\DesignCommentController::class, 'markAsRead'])->name('design-comments.mark-read');
+    Route::post('design-tasks/{designTask}/comments/mark-all-read', [\App\Http\Controllers\Admin\DesignCommentController::class, 'markAllAsRead'])->name('design-comments.mark-all-read');
+    Route::delete('design-tasks/{designTask}/comments/{designComment}', [\App\Http\Controllers\Admin\DesignCommentController::class, 'destroy'])->name('design-comments.destroy');
+});
+
+// Super Admin only routes (continued)
+Route::middleware(['auth', 'role:super-admin'])->prefix('admin')->name('admin.')->group(function () {
     // Pricing Tiers
     Route::resource('pricing-tiers', \App\Http\Controllers\Admin\PricingTierController::class);
 
@@ -154,8 +231,18 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('admin')->name('admin.')
     Route::post('import/product-prices', [\App\Http\Controllers\Admin\ImportController::class, 'importProductPrices'])->name('import.product-prices');
     Route::post('import/user-prices', [\App\Http\Controllers\Admin\ImportController::class, 'importUserPrices'])->name('import.user-prices');
     Route::post('import/team-prices', [\App\Http\Controllers\Admin\ImportController::class, 'importTeamPrices'])->name('import.team-prices');
+    Route::post('import/orders', [\App\Http\Controllers\Admin\ImportController::class, 'importOrders'])->name('import.orders');
     Route::get('import/sample/{type}', [\App\Http\Controllers\Admin\ImportController::class, 'downloadSample'])->name('import.sample');
 
     // Currency & Exchange Rates Management
     Route::resource('currencies', \App\Http\Controllers\Admin\CurrencyController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
+
+    // Design Prices Management (Super Admin only)
+    Route::prefix('design-prices')->name('design-prices.')->group(function () {
+        Route::get('/', function () {
+            return redirect()->route('admin.design-prices.users.index');
+        })->name('index');
+        Route::resource('users', \App\Http\Controllers\Admin\UserDesignPriceController::class);
+        Route::resource('teams', \App\Http\Controllers\Admin\TeamDesignPriceController::class);
+    });
 });

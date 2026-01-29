@@ -10,6 +10,33 @@
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
     @if (file_exists(public_path('build/manifest.json')) || file_exists(public_path('hot')))
         @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @else
+        <!-- Tailwind CSS CDN fallback -->
+        <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            primary: {
+                                50: '#fef5e7',
+                                100: '#fde8c4',
+                                200: '#fbd08a',
+                                300: '#f9b850',
+                                400: '#f7951d',
+                                500: '#f7951d',
+                                600: '#d67a0f',
+                                700: '#b35f0a',
+                                800: '#90450c',
+                                900: '#6d330d',
+                                DEFAULT: '#f7951d'
+                            }
+                        }
+                    }
+                },
+                darkMode: 'class'
+            }
+        </script>
     @endif
     <style>
         * {

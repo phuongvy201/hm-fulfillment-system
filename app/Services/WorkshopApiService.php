@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Models\Workshop;
 use App\Models\Order;
-use Illuminate\Support\Facades\Http;
+use App\Services\WorkshopApi\WorkshopApiAdapterFactory;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
@@ -12,6 +12,7 @@ class WorkshopApiService
 {
     /**
      * Submit order to workshop API.
+     * Sử dụng adapter pattern để hỗ trợ nhiều loại API khác nhau
      *
      * @param Order $order
      * @return array ['success' => bool, 'data' => array, 'error' => string|null]
@@ -20,7 +21,40 @@ class WorkshopApiService
     {
         $workshop = $order->workshop;
 
+        Log::info('WorkshopApiService: Starting order submission', [
+            'order_id' => $order->id,
+            'order_number' => $order->order_number,
+            'workshop_id' => $order->workshop_id,
+        ]);
+
+        if (!$workshop) {
+            Log::error('WorkshopApiService: Workshop not found', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'workshop_id' => $order->workshop_id,
+            ]);
+            return [
+                'success' => false,
+                'error' => 'Workshop not found for this order.',
+            ];
+        }
+
+        Log::info('WorkshopApiService: Workshop found', [
+            'order_id' => $order->id,
+            'workshop_id' => $workshop->id,
+            'workshop_name' => $workshop->name,
+            'workshop_code' => $workshop->code,
+            'api_type' => $workshop->api_type,
+            'api_enabled' => $workshop->api_enabled,
+            'api_endpoint' => $workshop->api_endpoint,
+        ]);
+
         if (!$workshop->api_enabled) {
+            Log::warning('WorkshopApiService: API not enabled', [
+                'order_id' => $order->id,
+                'workshop_id' => $workshop->id,
+                'workshop_name' => $workshop->name,
+            ]);
             return [
                 'success' => false,
                 'error' => 'API is not enabled for this workshop.',
@@ -28,6 +62,11 @@ class WorkshopApiService
         }
 
         if (empty($workshop->api_endpoint)) {
+            Log::warning('WorkshopApiService: API endpoint not configured', [
+                'order_id' => $order->id,
+                'workshop_id' => $workshop->id,
+                'workshop_name' => $workshop->name,
+            ]);
             return [
                 'success' => false,
                 'error' => 'API endpoint is not configured.',
@@ -35,41 +74,71 @@ class WorkshopApiService
         }
 
         try {
-            $payload = $this->buildOrderPayload($order);
-            
-            // Save request payload
-            $order->api_request = $payload;
-            $order->save();
-
-            $response = $this->makeApiRequest($workshop, $payload);
-
-            // Save response
-            $order->api_response = $response;
-            $order->save();
-
-            if ($response['success']) {
-                // Update order with workshop order ID and tracking
-                $this->updateOrderFromResponse($order, $response['data']);
-                
-                return [
-                    'success' => true,
-                    'data' => $response['data'],
-                ];
-            } else {
-                $order->error_message = $response['error'] ?? 'Unknown error';
-                $order->status = 'failed';
-                $order->save();
-
-                return [
-                    'success' => false,
-                    'error' => $response['error'] ?? 'Unknown error',
-                ];
-            }
-        } catch (Exception $e) {
-            Log::error('Workshop API Error', [
+            Log::info('WorkshopApiService: Creating adapter', [
                 'order_id' => $order->id,
                 'workshop_id' => $workshop->id,
+                'api_type' => $workshop->api_type,
+            ]);
+
+            // Lấy adapter phù hợp dựa trên api_type của workshop
+            $adapter = WorkshopApiAdapterFactory::create($workshop);
+
+            Log::info('WorkshopApiService: Adapter created', [
+                'order_id' => $order->id,
+                'workshop_id' => $workshop->id,
+                'adapter_class' => get_class($adapter),
+            ]);
+
+            // Gửi đơn hàng qua adapter
+            Log::info('WorkshopApiService: Calling adapter submitOrder', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'workshop_id' => $workshop->id,
+            ]);
+
+            $result = $adapter->submitOrder($workshop, $order);
+
+            Log::info('WorkshopApiService: Adapter response received', [
+                'order_id' => $order->id,
+                'success' => $result['success'] ?? false,
+                'has_data' => isset($result['data']),
+                'has_error' => isset($result['error']),
+            ]);
+
+            if (!$result['success']) {
+                Log::error('WorkshopApiService: Order submission failed', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'workshop_id' => $workshop->id,
+                    'error' => $result['error'] ?? 'Unknown error',
+                    'api_request' => $order->api_request ?? null,
+                    'api_response' => $order->api_response ?? null,
+                ]);
+                $order->error_message = $result['error'] ?? 'Unknown error';
+                $order->status = 'failed';
+                $order->save();
+            } else {
+                Log::info('WorkshopApiService: Order submitted successfully', [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'workshop_id' => $workshop->id,
+                    'workshop_order_id' => $order->workshop_order_id ?? null,
+                    'tracking_number' => $order->tracking_number ?? null,
+                ]);
+            }
+
+            return $result;
+        } catch (Exception $e) {
+            Log::error('WorkshopApiService: Exception occurred', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'workshop_id' => $workshop->id ?? null,
+                'api_type' => $workshop->api_type ?? null,
                 'error' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             $order->error_message = $e->getMessage();
@@ -84,107 +153,6 @@ class WorkshopApiService
     }
 
     /**
-     * Build order payload for API request.
-     */
-    protected function buildOrderPayload(Order $order): array
-    {
-        return [
-            'order_number' => $order->order_number,
-            'items' => $order->items,
-            'shipping_address' => $order->shipping_address,
-            'billing_address' => $order->billing_address,
-            'total_amount' => $order->total_amount,
-            'currency' => $order->currency,
-            'notes' => $order->notes,
-        ];
-    }
-
-    /**
-     * Make API request to workshop.
-     */
-    protected function makeApiRequest(Workshop $workshop, array $payload): array
-    {
-        $endpoint = rtrim($workshop->api_endpoint, '/') . '/orders';
-        
-        $headers = [
-            'Content-Type' => 'application/json',
-            'Accept' => 'application/json',
-        ];
-
-        // Add API key if configured
-        if ($workshop->api_key) {
-            $headers['X-API-Key'] = $workshop->api_key;
-        }
-
-        // Add custom headers from api_settings
-        if ($workshop->api_settings && isset($workshop->api_settings['headers'])) {
-            $headers = array_merge($headers, $workshop->api_settings['headers']);
-        }
-
-        $timeout = $workshop->api_settings['timeout'] ?? 30;
-
-        try {
-            $response = Http::timeout($timeout)
-                ->withHeaders($headers)
-                ->post($endpoint, $payload);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                
-                return [
-                    'success' => true,
-                    'data' => $data,
-                ];
-            } else {
-                return [
-                    'success' => false,
-                    'error' => $response->body() ?? 'API request failed',
-                    'status' => $response->status(),
-                ];
-            }
-        } catch (Exception $e) {
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * Update order from API response.
-     */
-    protected function updateOrderFromResponse(Order $order, array $responseData): void
-    {
-        $updates = [
-            'status' => 'processing',
-            'submitted_at' => now(),
-        ];
-
-        // Extract workshop order ID
-        if (isset($responseData['order_id'])) {
-            $updates['workshop_order_id'] = $responseData['order_id'];
-        } elseif (isset($responseData['id'])) {
-            $updates['workshop_order_id'] = $responseData['id'];
-        }
-
-        // Extract tracking number
-        if (isset($responseData['tracking_number'])) {
-            $updates['tracking_number'] = $responseData['tracking_number'];
-        } elseif (isset($responseData['tracking'])) {
-            $updates['tracking_number'] = $responseData['tracking'];
-        }
-
-        // Extract tracking URL
-        if (isset($responseData['tracking_url'])) {
-            $updates['tracking_url'] = $responseData['tracking_url'];
-        } elseif (isset($responseData['tracking_link'])) {
-            $updates['tracking_url'] = $responseData['tracking_link'];
-        }
-
-        $order->update($updates);
-    }
-
-    /**
      * Get tracking information from workshop API.
      *
      * @param Order $order
@@ -194,6 +162,13 @@ class WorkshopApiService
     {
         $workshop = $order->workshop;
 
+        if (!$workshop) {
+            return [
+                'success' => false,
+                'error' => 'Workshop not found for this order.',
+            ];
+        }
+
         if (!$workshop->api_enabled || empty($workshop->api_endpoint)) {
             return [
                 'success' => false,
@@ -201,59 +176,17 @@ class WorkshopApiService
             ];
         }
 
-        if (empty($order->workshop_order_id)) {
-            return [
-                'success' => false,
-                'error' => 'Workshop order ID is missing.',
-            ];
-        }
-
         try {
-            $endpoint = rtrim($workshop->api_endpoint, '/') . '/orders/' . $order->workshop_order_id . '/tracking';
-            
-            $headers = [
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-            ];
+            // Lấy adapter phù hợp
+            $adapter = WorkshopApiAdapterFactory::create($workshop);
 
-            if ($workshop->api_key) {
-                $headers['X-API-Key'] = $workshop->api_key;
-            }
-
-            if ($workshop->api_settings && isset($workshop->api_settings['headers'])) {
-                $headers = array_merge($headers, $workshop->api_settings['headers']);
-            }
-
-            $timeout = $workshop->api_settings['timeout'] ?? 30;
-
-            $response = Http::timeout($timeout)
-                ->withHeaders($headers)
-                ->get($endpoint);
-
-            if ($response->successful()) {
-                $data = $response->json();
-                
-                // Update tracking if provided
-                if (isset($data['tracking_number']) && $data['tracking_number'] !== $order->tracking_number) {
-                    $order->update([
-                        'tracking_number' => $data['tracking_number'],
-                        'tracking_url' => $data['tracking_url'] ?? $order->tracking_url,
-                    ]);
-                }
-
-                return [
-                    'success' => true,
-                    'data' => $data,
-                ];
-            } else {
-                return [
-                    'success' => false,
-                    'error' => $response->body() ?? 'Failed to get tracking information',
-                ];
-            }
+            // Lấy tracking qua adapter
+            return $adapter->getTracking($workshop, $order);
         } catch (Exception $e) {
             Log::error('Workshop API Tracking Error', [
                 'order_id' => $order->id,
+                'workshop_id' => $workshop->id,
+                'api_type' => $workshop->api_type,
                 'error' => $e->getMessage(),
             ]);
 
@@ -280,36 +213,152 @@ class WorkshopApiService
         }
 
         try {
-            $endpoint = rtrim($workshop->api_endpoint, '/') . '/health';
-            
-            $headers = [
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-            ];
+            // Lấy adapter phù hợp
+            $adapter = WorkshopApiAdapterFactory::create($workshop);
 
-            if ($workshop->api_key) {
-                $headers['X-API-Key'] = $workshop->api_key;
-            }
-
-            $timeout = $workshop->api_settings['timeout'] ?? 10;
-
-            $response = Http::timeout($timeout)
-                ->withHeaders($headers)
-                ->get($endpoint);
-
-            if ($response->successful()) {
-                return [
-                    'success' => true,
-                    'message' => 'Connection successful',
-                    'data' => $response->json(),
-                ];
-            } else {
-                return [
-                    'success' => false,
-                    'error' => 'Connection failed: ' . $response->status(),
-                ];
-            }
+            // Test connection qua adapter
+            return $adapter->testConnection($workshop);
         } catch (Exception $e) {
+            Log::error('Workshop API Test Connection Error', [
+                'workshop_id' => $workshop->id,
+                'api_type' => $workshop->api_type,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * List orders from workshop API.
+     *
+     * @param Workshop $workshop
+     * @param array $filters
+     * @return array
+     */
+    public function listOrders(Workshop $workshop, array $filters = []): array
+    {
+        if (!$workshop->api_enabled || empty($workshop->api_endpoint)) {
+            return [
+                'success' => false,
+                'error' => 'API is not configured.',
+            ];
+        }
+
+        try {
+            $adapter = WorkshopApiAdapterFactory::create($workshop);
+            return $adapter->listOrders($workshop, $filters);
+        } catch (Exception $e) {
+            Log::error('Workshop API List Orders Error', [
+                'workshop_id' => $workshop->id,
+                'api_type' => $workshop->api_type,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Get order details from workshop API.
+     *
+     * @param Workshop $workshop
+     * @param string $orderId
+     * @return array
+     */
+    public function getOrder(Workshop $workshop, string $orderId): array
+    {
+        if (!$workshop->api_enabled || empty($workshop->api_endpoint)) {
+            return [
+                'success' => false,
+                'error' => 'API is not configured.',
+            ];
+        }
+
+        try {
+            $adapter = WorkshopApiAdapterFactory::create($workshop);
+            return $adapter->getOrder($workshop, $orderId);
+        } catch (Exception $e) {
+            Log::error('Workshop API Get Order Error', [
+                'workshop_id' => $workshop->id,
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Update order in workshop API.
+     *
+     * @param Workshop $workshop
+     * @param string $orderId
+     * @param array $data
+     * @return array
+     */
+    public function updateOrder(Workshop $workshop, string $orderId, array $data): array
+    {
+        if (!$workshop->api_enabled || empty($workshop->api_endpoint)) {
+            return [
+                'success' => false,
+                'error' => 'API is not configured.',
+            ];
+        }
+
+        try {
+            $adapter = WorkshopApiAdapterFactory::create($workshop);
+            return $adapter->updateOrder($workshop, $orderId, $data);
+        } catch (Exception $e) {
+            Log::error('Workshop API Update Order Error', [
+                'workshop_id' => $workshop->id,
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Cancel order in workshop API.
+     *
+     * @param Workshop $workshop
+     * @param string $orderId
+     * @param string|null $reason
+     * @return array
+     */
+    public function cancelOrder(Workshop $workshop, string $orderId, ?string $reason = null): array
+    {
+        if (!$workshop->api_enabled || empty($workshop->api_endpoint)) {
+            return [
+                'success' => false,
+                'error' => 'API is not configured.',
+            ];
+        }
+
+        try {
+            $adapter = WorkshopApiAdapterFactory::create($workshop);
+            return $adapter->cancelOrder($workshop, $orderId, $reason);
+        } catch (Exception $e) {
+            Log::error('Workshop API Cancel Order Error', [
+                'workshop_id' => $workshop->id,
+                'order_id' => $orderId,
+                'error' => $e->getMessage(),
+            ]);
+
             return [
                 'success' => false,
                 'error' => $e->getMessage(),
@@ -317,44 +366,3 @@ class WorkshopApiService
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

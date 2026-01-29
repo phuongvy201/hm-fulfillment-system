@@ -27,7 +27,7 @@
         <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             @foreach($product->images as $image)
             <div class="relative group">
-                <img src="{{ Storage::url($image->image_path) }}" alt="Product Image" class="w-full h-32 object-cover rounded-lg border" style="border-color: #E5E7EB;">
+                <img src="{{ $image->url }}" alt="Product Image" class="w-full h-32 object-cover rounded-lg border" style="border-color: #E5E7EB;">
                 @if($image->is_primary)
                 <span class="absolute top-2 left-2 px-2 py-1 text-xs font-semibold rounded" style="background-color: #10B981; color: white;">Primary</span>
                 @endif
@@ -44,7 +44,7 @@
                 $primaryImage = $product->images->where('is_primary', true)->first() ?? $product->images->first();
             @endphp
             @if($primaryImage)
-                <img src="{{ Storage::url($primaryImage->image_path) }}" alt="{{ $product->name }}" class="w-16 h-16 rounded-xl object-cover border shadow-md" style="border-color: #E5E7EB;">
+                <img src="{{ $primaryImage->url }}" alt="{{ $product->name }}" class="w-16 h-16 rounded-xl object-cover border shadow-md" style="border-color: #E5E7EB;">
             @else
             <div class="w-16 h-16 rounded-xl flex items-center justify-center font-bold text-white text-xl shadow-md" style="background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);">
                 <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -358,7 +358,7 @@
                             <div class="flex gap-4">
                                 @if($primaryImage)
                                     <div class="h-14 w-14 rounded-lg bg-gray-100 overflow-hidden shrink-0 border border-gray-200">
-                                        <img alt="Product Image" class="h-full w-full object-cover" src="{{ Storage::url($primaryImage->image_path) }}">
+                                        <img alt="Product Image" class="h-full w-full object-cover" src="{{ $primaryImage->url }}">
                                     </div>
                                 @else
                                     <div class="h-14 w-14 rounded-lg bg-gray-100 shrink-0 border border-gray-200 flex items-center justify-center">

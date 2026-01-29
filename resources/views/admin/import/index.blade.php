@@ -179,6 +179,34 @@
                 </button>
             </form>
         </div>
+
+        <!-- Import Orders -->
+        <div class="bg-white rounded-lg shadow-sm p-6" style="border: 1px solid #E5E7EB;">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold" style="color: #111827;">6. Import Orders</h3>
+                <a href="{{ route('admin.import.sample', 'orders') }}" class="text-sm px-3 py-1 rounded" style="background-color: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE;">
+                    Download Sample
+                </a>
+            </div>
+            <p class="text-sm mb-4" style="color: #6B7280;">
+                Import orders in bulk. Multiple rows with the same order_number will be grouped as one order with multiple items. Payment will be automatically processed from wallet or credit.
+            </p>
+            <form action="{{ route('admin.import.orders') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                @csrf
+                <div>
+                    <input type="file" name="file" accept=".csv,.txt" required 
+                        class="w-full px-4 py-2 rounded-lg border text-sm"
+                        style="border-color: #D1D5DB; color: #111827;">
+                    <p class="mt-1 text-xs" style="color: #9CA3AF;">CSV or TXT file, max 10MB</p>
+                </div>
+                <button type="submit" class="w-full px-4 py-2 rounded-lg text-sm font-medium text-white transition-all"
+                    style="background-color: #2563EB;"
+                    onmouseover="this.style.backgroundColor='#1D4ED8'"
+                    onmouseout="this.style.backgroundColor='#2563EB'">
+                    Import Orders
+                </button>
+            </form>
+        </div>
     </div>
 
     <!-- CSV Format Reference -->
@@ -207,6 +235,16 @@
                 <h4 class="font-semibold mb-2" style="color: #111827;">Team Prices CSV:</h4>
                 <code class="block p-3 rounded bg-gray-50 text-xs" style="color: #374151;">team_slug,product_sku,variant_sku,location_code,price,status,valid_from,valid_to</code>
                 <p class="mt-1 text-xs" style="color: #6B7280;">Note: Currency is auto-detected from location</p>
+            </div>
+            <div>
+                <h4 class="font-semibold mb-2" style="color: #111827;">Orders CSV:</h4>
+                <code class="block p-3 rounded bg-gray-50 text-xs" style="color: #374151;">order_number,user_email,store_name,sales_channel,shipping_method,tiktok_label_url,order_note,product_sku,variant_sku,quantity,product_title,designs,mockups,shipping_name,shipping_email,shipping_phone,shipping_address,shipping_address2,shipping_city,shipping_state,shipping_postal_code,shipping_country</code>
+                <p class="mt-1 text-xs" style="color: #6B7280;">
+                    <strong>Note:</strong> Multiple rows with same order_number = one order with multiple items. Payment processed automatically.<br>
+                    <strong>designs:</strong> JSON array format: [{"url":"https://...","position":"Front"},{"url":"https://...","position":"Back"}]. Design URLs must be PNG files or Google Drive links.<br>
+                    <strong>mockups:</strong> JSON array format: [{"url":"https://...","position":"S-Front"},{"url":"https://...","position":"Tote-Back"}]. Mockup URLs can be any image format or PDF, or Google Drive links.<br>
+                    <strong>tiktok_label_url:</strong> Required only when shipping_method = "tiktok_label". Must be a Google Drive link.
+                </p>
             </div>
         </div>
     </div>

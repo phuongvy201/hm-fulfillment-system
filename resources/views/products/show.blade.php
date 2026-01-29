@@ -38,7 +38,7 @@
                 <div class="aspect-[4/5] bg-white dark:bg-neutral-900 rounded-3xl overflow-hidden relative border border-neutral-200 dark:border-neutral-800 group shadow-sm">
                     @if($primaryImage)
                         <img id="mainImage" alt="{{ $product->name }}" class="w-full h-full object-cover"
-                             src="{{ \Illuminate\Support\Facades\Storage::url($primaryImage->image_path) }}">
+                             src="{{ $primaryImage->url }}">
                     @else
                         <div class="w-full h-full flex items-center justify-center text-neutral-400">
                             <span class="material-symbols-outlined text-5xl">photo</span>
@@ -56,8 +56,8 @@
                         @foreach($images as $index => $image)
                             @if($index < 3)
                                 <button class="aspect-square rounded-2xl border {{ $image->id === ($primaryImage->id ?? null) ? 'border-2 border-primary shadow-md' : 'border border-neutral-200 dark:border-neutral-800 opacity-70 hover:opacity-100' }} overflow-hidden cursor-pointer transition-opacity"
-                                        onclick="changeMainImage('{{ \Illuminate\Support\Facades\Storage::url($image->image_path) }}', this)">
-                                    <img class="w-full h-full object-cover" src="{{ \Illuminate\Support\Facades\Storage::url($image->image_path) }}" alt="{{ $product->name }}">
+                                        onclick="changeMainImage('{{ $image->url }}', this)">
+                                    <img class="w-full h-full object-cover" src="{{ $image->url }}" alt="{{ $product->name }}">
                                 </button>
                             @elseif($index === 3)
                                 <div class="aspect-square rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 flex items-center justify-center text-neutral-400 hover:text-primary transition-colors cursor-pointer">
@@ -92,6 +92,7 @@
 
             @php
                 $attributeGroups = [];
+                $colorHexMap = []; // Map từ attribute_value -> color_hex
                 foreach ($product->variants as $variant) {
                     foreach ($variant->variantAttributes as $attr) {
                         $attrName = $attr->attribute_name;
@@ -100,6 +101,17 @@
                             $attributeGroups[$attrName] = $attributeGroups[$attrName] ?? [];
                             if (!in_array($attrValue, $attributeGroups[$attrName])) {
                                 $attributeGroups[$attrName][] = $attrValue;
+                            }
+                            
+                            // Lưu color_hex nếu có (ưu tiên variant đầu tiên có color_hex)
+                            $attrKey = strtolower(trim($attrName));
+                            $isColor = str_contains($attrKey, 'color') || 
+                                       str_contains($attrKey, 'màu') || 
+                                       str_contains($attrKey, 'colour') ||
+                                       $attrKey === 'color' ||
+                                       $attrKey === 'màu';
+                            if ($isColor && $attr->color_hex && !isset($colorHexMap[$attrValue])) {
+                                $colorHexMap[$attrValue] = $attr->color_hex;
                             }
                         }
                     }
@@ -241,11 +253,25 @@
                                         <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400 mb-4">{{ $attrName }}</label>
                                         @if($isColor)
                                             @php
-                                                $parsedColors = collect($attrValues)->map(function($val) use ($colorNameMap) {
+                                                $parsedColors = collect($attrValues)->map(function($val) use ($colorNameMap, $colorHexMap) {
                                                     $original = trim((string)$val);
                                                     $label = $original === '' ? 'N/A' : $original;
+                                                    
+                                                    // Ưu tiên 1: Lấy color_hex từ database nếu có
+                                                    if (isset($colorHexMap[$original]) && !empty($colorHexMap[$original])) {
+                                                        $hex = ltrim($colorHexMap[$original], '#');
+                                                        // Đảm bảo format đúng (#RRGGBB)
+                                                        if (preg_match('/^[0-9a-fA-F]{6}$/', $hex)) {
+                                                            return ['css' => '#' . $hex, 'label' => $label, 'value' => $original];
+                                                        } elseif (preg_match('/^[0-9a-fA-F]{3}$/', $hex)) {
+                                                            // Expand 3-digit hex to 6-digit
+                                                            $expanded = $hex[0].$hex[0].$hex[1].$hex[1].$hex[2].$hex[2];
+                                                            return ['css' => '#' . $expanded, 'label' => $label, 'value' => $original];
+                                                        }
+                                                    }
+                                                    
+                                                    // Fallback về logic cũ
                                                     $candidate = $label;
-
                                                     if ($candidate === 'N/A') {
                                                         return ['css' => '#e5e7eb', 'label' => $label, 'value' => $original];
                                                     }
@@ -445,7 +471,7 @@
                     <a href="{{ route('products.show', $related->slug) }}" class="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl overflow-hidden hover:-translate-y-1 transition-all shadow-lg shadow-black/5">
                         <div class="aspect-[4/5] bg-neutral-100 dark:bg-neutral-800">
                             @if($relatedImage)
-                                <img class="w-full h-full object-cover" src="{{ \Illuminate\Support\Facades\Storage::url($relatedImage->image_path) }}" alt="{{ $related->name }}">
+                                <img class="w-full h-full object-cover" src="{{ $relatedImage->url }}" alt="{{ $related->name }}">
                             @else
                                 <div class="w-full h-full flex items-center justify-center text-neutral-400">
                                     <span class="material-symbols-outlined text-4xl">photo</span>
