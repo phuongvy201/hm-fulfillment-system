@@ -20,36 +20,51 @@ class DesignCommentController extends Controller
 
         $user = auth()->user();
         $isCustomer = $user->hasRole('customer') && !$user->isSuperAdmin();
-        $isDesigner = $user->hasRole('designer') || $user->isSuperAdmin();
+        $isDesigner = $user->hasRole('designer') && !$user->isSuperAdmin();
+        $isSuperAdmin = $user->isSuperAdmin();
+        $isFulfillmentStaff = $user->hasRole('fulfillment-staff');
 
         // Check permissions
-        if ($isCustomer && $designTask->customer_id !== $user->id) {
-            abort(403, 'You can only comment on your own tasks.');
-        }
+        // Super Admin and Fulfillment Staff can comment on any task
+        if (!$isSuperAdmin && !$isFulfillmentStaff) {
+            if ($isCustomer && $designTask->customer_id !== $user->id) {
+                abort(403, 'You can only comment on your own tasks.');
+            }
 
-        if ($isDesigner && $designTask->designer_id !== $user->id) {
-            abort(403, 'You can only comment on tasks assigned to you.');
+            if ($isDesigner && $designTask->designer_id !== $user->id) {
+                abort(403, 'You can only comment on tasks assigned to you.');
+            }
         }
 
         $comment = new DesignComment();
         $comment->design_task_id = $designTask->id;
         $comment->user_id = $user->id;
         $comment->content = $validated['content'];
-        $comment->type = $isCustomer ? 'customer' : 'designer';
+        // Determine comment type: admin/fulfillment-staff comments are treated as 'admin', customer as 'customer', designer as 'designer'
+        if ($isSuperAdmin || $isFulfillmentStaff) {
+            $comment->type = 'admin';
+        } else {
+            $comment->type = $isCustomer ? 'customer' : 'designer';
+        }
         $comment->is_read = false;
         $comment->save();
 
         // Mark other user's comments as unread
         if ($isCustomer) {
-            // Mark designer's comments as unread
+            // Mark designer's and admin's comments as unread
             DesignComment::where('design_task_id', $designTask->id)
-                ->where('type', 'designer')
+                ->whereIn('type', ['designer', 'admin'])
+                ->where('user_id', '!=', $user->id)
+                ->update(['is_read' => false]);
+        } elseif ($isDesigner) {
+            // Mark customer's and admin's comments as unread
+            DesignComment::where('design_task_id', $designTask->id)
+                ->whereIn('type', ['customer', 'admin'])
                 ->where('user_id', '!=', $user->id)
                 ->update(['is_read' => false]);
         } else {
-            // Mark customer's comments as unread
+            // Admin/Staff comments: mark all other comments as unread
             DesignComment::where('design_task_id', $designTask->id)
-                ->where('type', 'customer')
                 ->where('user_id', '!=', $user->id)
                 ->update(['is_read' => false]);
         }

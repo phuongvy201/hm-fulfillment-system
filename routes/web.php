@@ -66,6 +66,30 @@ Route::middleware(['auth', 'role:customer'])->prefix('customer')->name('customer
     Route::post('orders/{order}/cancel', [\App\Http\Controllers\Admin\OrderController::class, 'cancel'])->name('orders.cancel');
 });
 
+// Designer and Super Admin routes for Design Tasks
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    // Design Tasks - accessible by both designer and super-admin
+    Route::get('design-tasks', [\App\Http\Controllers\Admin\DesignTaskController::class, 'index'])->name('design-tasks.index');
+    Route::get('design-tasks/{designTask}', [\App\Http\Controllers\Admin\DesignTaskController::class, 'show'])->name('design-tasks.show');
+    Route::get('design-tasks/calculate-price/{sidesCount}', [\App\Http\Controllers\Admin\DesignTaskController::class, 'calculatePrice'])->name('design-tasks.calculate-price');
+    Route::post('design-tasks/{designTask}/join', [\App\Http\Controllers\Admin\DesignTaskController::class, 'join'])->name('design-tasks.join');
+    Route::post('design-tasks/{designTask}/update-status', [\App\Http\Controllers\Admin\DesignTaskController::class, 'updateStatus'])->name('design-tasks.update-status');
+
+    // Design Revisions
+    Route::post('design-tasks/{designTask}/revisions', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'store'])->name('design-revisions.store');
+    Route::put('design-tasks/{designTask}/revisions/{designRevision}', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'update'])->name('design-revisions.update');
+
+    // Multipart Upload APIs for Design Revisions
+    Route::post('design-tasks/{designTask}/revisions/init-multipart', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'initMultipartUpload'])->name('design-revisions.init-multipart');
+    Route::post('design-tasks/{designTask}/revisions/multipart-part-urls', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'getMultipartPartUrls'])->name('design-revisions.multipart-part-urls');
+    Route::post('design-tasks/{designTask}/revisions/complete-multipart', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'completeMultipartUpload'])->name('design-revisions.complete-multipart');
+
+    // Design Comments
+    Route::post('design-tasks/{designTask}/comments', [\App\Http\Controllers\Admin\DesignCommentController::class, 'store'])->name('design-comments.store');
+    Route::post('design-tasks/{designTask}/comments/{designComment}/mark-read', [\App\Http\Controllers\Admin\DesignCommentController::class, 'markAsRead'])->name('design-comments.mark-read');
+    Route::post('design-tasks/{designTask}/comments/mark-all-read', [\App\Http\Controllers\Admin\DesignCommentController::class, 'markAllAsRead'])->name('design-comments.mark-all-read');
+});
+
 // Super Admin only routes
 Route::middleware(['auth', 'role:super-admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('users', \App\Http\Controllers\Admin\UserController::class);
@@ -108,22 +132,19 @@ Route::middleware(['auth', 'role:super-admin'])->prefix('admin')->name('admin.')
     Route::post('orders/{order}/cancel', [\App\Http\Controllers\Admin\OrderController::class, 'cancel'])->name('orders.cancel');
     Route::get('orders/{order}/print-label', [\App\Http\Controllers\Admin\OrderController::class, 'printLabel'])->name('orders.print-label');
 
-    // Design Tasks
-    Route::resource('design-tasks', \App\Http\Controllers\Admin\DesignTaskController::class);
-    Route::get('design-tasks/calculate-price/{sidesCount}', [\App\Http\Controllers\Admin\DesignTaskController::class, 'calculatePrice'])->name('design-tasks.calculate-price');
-    Route::post('design-tasks/{designTask}/join', [\App\Http\Controllers\Admin\DesignTaskController::class, 'join'])->name('design-tasks.join');
-    Route::post('design-tasks/{designTask}/update-status', [\App\Http\Controllers\Admin\DesignTaskController::class, 'updateStatus'])->name('design-tasks.update-status');
+    // Design Tasks - Full access for Super Admin (create, edit, update, delete)
+    Route::get('design-tasks/create', [\App\Http\Controllers\Admin\DesignTaskController::class, 'create'])->name('design-tasks.create');
+    Route::post('design-tasks', [\App\Http\Controllers\Admin\DesignTaskController::class, 'store'])->name('design-tasks.store');
+    Route::get('design-tasks/{designTask}/edit', [\App\Http\Controllers\Admin\DesignTaskController::class, 'edit'])->name('design-tasks.edit');
+    Route::put('design-tasks/{designTask}', [\App\Http\Controllers\Admin\DesignTaskController::class, 'update'])->name('design-tasks.update');
+    Route::delete('design-tasks/{designTask}', [\App\Http\Controllers\Admin\DesignTaskController::class, 'destroy'])->name('design-tasks.destroy');
 
-    // Design Revisions
-    Route::post('design-tasks/{designTask}/revisions', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'store'])->name('design-revisions.store');
+    // Design Revisions - Full access for Super Admin
     Route::post('design-tasks/{designTask}/revisions/{designRevision}/approve', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'approve'])->name('design-revisions.approve');
     Route::post('design-tasks/{designTask}/revisions/{designRevision}/request-revision', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'requestRevision'])->name('design-revisions.request-revision');
     Route::delete('design-tasks/{designTask}/revisions/{designRevision}', [\App\Http\Controllers\Admin\DesignRevisionController::class, 'destroy'])->name('design-revisions.destroy');
 
-    // Design Comments
-    Route::post('design-tasks/{designTask}/comments', [\App\Http\Controllers\Admin\DesignCommentController::class, 'store'])->name('design-comments.store');
-    Route::post('design-tasks/{designTask}/comments/{designComment}/mark-read', [\App\Http\Controllers\Admin\DesignCommentController::class, 'markAsRead'])->name('design-comments.mark-read');
-    Route::post('design-tasks/{designTask}/comments/mark-all-read', [\App\Http\Controllers\Admin\DesignCommentController::class, 'markAllAsRead'])->name('design-comments.mark-all-read');
+    // Design Comments - Full access for Super Admin
     Route::delete('design-tasks/{designTask}/comments/{designComment}', [\App\Http\Controllers\Admin\DesignCommentController::class, 'destroy'])->name('design-comments.destroy');
 });
 

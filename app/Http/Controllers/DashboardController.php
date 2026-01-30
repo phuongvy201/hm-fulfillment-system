@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Models\Product;
 use App\Models\Workshop;
+use App\Models\DesignTask;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +20,15 @@ class DashboardController extends Controller
         if (!$user) {
             return redirect()->route('login');
         }
+
+        // Check if user is a designer (but not super-admin)
+        $isDesigner = $user->hasRole('designer') && !$user->isSuperAdmin();
+
+        // If designer, show designer dashboard
+        if ($isDesigner) {
+            return $this->designerDashboard($user);
+        }
+
         $isAdmin = $user->isAdmin() || $user->isSuperAdmin();
 
         // Get date range for comparison (last 30 days vs previous 30 days)
@@ -188,6 +198,139 @@ class DashboardController extends Controller
             'regionData' => $regionData,
             'recentOrders' => $recentOrders,
             'isAdmin' => $isAdmin,
+        ]);
+    }
+
+    /**
+     * Dashboard for designers
+     */
+    private function designerDashboard($user)
+    {
+        $now = Carbon::now();
+        $last30Days = $now->copy()->subDays(30);
+        $previous30Days = $last30Days->copy()->subDays(30);
+
+        // Base query for designer's tasks
+        $taskQuery = DesignTask::query();
+
+        // Total Tasks Assigned
+        $totalTasks = (clone $taskQuery)->where('designer_id', $user->id)->count();
+        $totalTasksLastPeriod = DesignTask::where('designer_id', $user->id)
+            ->where('created_at', '>=', $previous30Days)
+            ->where('created_at', '<', $last30Days)
+            ->count();
+        $totalTasksChange = $totalTasksLastPeriod > 0
+            ? (($totalTasks - $totalTasksLastPeriod) / $totalTasksLastPeriod) * 100
+            : 0;
+
+        // Pending Tasks
+        $pendingTasks = (clone $taskQuery)->where('designer_id', $user->id)
+            ->where('status', 'pending')
+            ->count();
+        $pendingTasksLastPeriod = DesignTask::where('designer_id', $user->id)
+            ->where('status', 'pending')
+            ->where('created_at', '>=', $previous30Days)
+            ->where('created_at', '<', $last30Days)
+            ->count();
+        $pendingChange = $pendingTasksLastPeriod > 0
+            ? (($pendingTasks - $pendingTasksLastPeriod) / $pendingTasksLastPeriod) * 100
+            : 0;
+
+        // Completed Tasks
+        $completedTasks = (clone $taskQuery)->where('designer_id', $user->id)
+            ->where('status', 'completed')
+            ->count();
+        $completedTasksLastPeriod = DesignTask::where('designer_id', $user->id)
+            ->where('status', 'completed')
+            ->where('created_at', '>=', $previous30Days)
+            ->where('created_at', '<', $last30Days)
+            ->count();
+        $completedChange = $completedTasksLastPeriod > 0
+            ? (($completedTasks - $completedTasksLastPeriod) / $completedTasksLastPeriod) * 100
+            : 0;
+
+        // Tasks Needing Revision
+        $revisionTasks = (clone $taskQuery)->where('designer_id', $user->id)
+            ->where('status', 'revision')
+            ->count();
+        $revisionTasksLastPeriod = DesignTask::where('designer_id', $user->id)
+            ->where('status', 'revision')
+            ->where('created_at', '>=', $previous30Days)
+            ->where('created_at', '<', $last30Days)
+            ->count();
+        $revisionChange = $revisionTasksLastPeriod > 0
+            ? (($revisionTasks - $revisionTasksLastPeriod) / $revisionTasksLastPeriod) * 100
+            : 0;
+
+        // Available Tasks (not assigned to anyone)
+        $availableTasks = DesignTask::whereNull('designer_id')
+            ->where('status', 'pending')
+            ->count();
+
+        // Task Volume over Time (Weekly)
+        $weeklyData = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $weekStart = $now->copy()->subWeeks($i)->startOfWeek();
+            $weekEnd = $weekStart->copy()->endOfWeek();
+
+            $weekQuery = DesignTask::where('designer_id', $user->id)
+                ->whereBetween('created_at', [$weekStart, $weekEnd]);
+
+            $weeklyData[] = [
+                'week' => $weekStart->format('W'),
+                'year' => $weekStart->format('Y'),
+                'label' => 'Week ' . $weekStart->format('W'),
+                'count' => $weekQuery->count(),
+            ];
+        }
+
+        // Tasks by Status
+        $statusData = [];
+        $statuses = ['pending', 'in_progress', 'revision', 'completed', 'cancelled'];
+        foreach ($statuses as $status) {
+            $count = DesignTask::where('designer_id', $user->id)
+                ->where('status', $status)
+                ->count();
+            if ($count > 0) {
+                $statusData[ucfirst(str_replace('_', ' ', $status))] = $count;
+            }
+        }
+
+        // Tasks by Customer
+        $customerData = [];
+        $customerQuery = DesignTask::select('customer_id', DB::raw('count(*) as count'))
+            ->where('designer_id', $user->id)
+            ->groupBy('customer_id')
+            ->with('customer')
+            ->get();
+
+        foreach ($customerQuery as $task) {
+            $customerName = $task->customer->name ?? 'Unknown';
+            $customerData[$customerName] = $task->count;
+        }
+        arsort($customerData);
+
+        // Recent Tasks
+        $recentTasks = DesignTask::with(['customer', 'designer'])
+            ->where('designer_id', $user->id)
+            ->latest()
+            ->limit(5)
+            ->get();
+
+        return view('dashboard-designer', [
+            'totalTasks' => $totalTasks,
+            'totalTasksChange' => $totalTasksChange,
+            'pendingTasks' => $pendingTasks,
+            'pendingChange' => $pendingChange,
+            'completedTasks' => $completedTasks,
+            'completedChange' => $completedChange,
+            'revisionTasks' => $revisionTasks,
+            'revisionChange' => $revisionChange,
+            'availableTasks' => $availableTasks,
+            'weeklyData' => $weeklyData,
+            'statusData' => $statusData,
+            'customerData' => $customerData,
+            'recentTasks' => $recentTasks,
         ]);
     }
 }

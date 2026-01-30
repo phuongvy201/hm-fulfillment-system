@@ -41,7 +41,7 @@
 
 @section('header-actions')
 <div class="flex items-center gap-4">
-    @if($isDesigner && $designTask->status === 'pending' && !$designTask->designer_id)
+    @if($isDesigner && !$isSuperAdmin && $designTask->status === 'pending' && !$designTask->designer_id)
     <form method="POST" action="{{ route($routePrefix . '.design-tasks.join', $designTask) }}" class="inline">
         @csrf
         <button type="submit" class="flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-primary transition-colors">
@@ -130,9 +130,14 @@
                         </h3>
                     </div>
                     <div class="p-6">
+                        @php
+                            $fileUrl = getDesignFileUrl($file);
+                        @endphp
+                        @if($fileUrl)
                         <div class="aspect-video w-full rounded-xl bg-slate-50 overflow-hidden border border-slate-200">
-                            <img src="{{ asset('storage/' . $file) }}" alt="Mockup {{ $index + 1 }}" class="w-full h-full object-contain cursor-pointer" onclick="openImageModal('{{ asset('storage/' . $file) }}')">
+                            <img src="{{ $fileUrl }}" alt="Mockup {{ $index + 1 }}" class="w-full h-full object-contain cursor-pointer" onclick="openImageModal('{{ $fileUrl }}')">
                         </div>
+                        @endif
                     </div>
                 </section>
                 @endforeach
@@ -143,22 +148,44 @@
             @php
                 $latestApprovedRevision = $designTask->revisions->where('status', 'approved')->sortByDesc('created_at')->first();
             @endphp
-            @if($latestApprovedRevision && $latestApprovedRevision->design_file)
+            @php
+                $approvedFiles = $latestApprovedRevision ? $latestApprovedRevision->design_files : [];
+            @endphp
+            @if(count($approvedFiles) > 0)
             <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div class="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                     <h3 class="font-bold text-slate-900 flex items-center gap-2">
                         <span class="material-symbols-outlined text-primary">auto_awesome</span>
                         Final Design
                     </h3>
-                    <a href="{{ asset('storage/' . $latestApprovedRevision->design_file) }}" target="_blank" class="text-sm font-bold text-primary flex items-center gap-1 hover:underline">
-                        <span class="material-symbols-outlined text-lg">download</span>
-                        Download File
-                    </a>
-                </div>
-                <div class="p-6">
-                    <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden p-8 flex justify-center">
-                        <img src="{{ asset('storage/' . $latestApprovedRevision->design_file) }}" alt="Final Design" class="max-h-[500px] w-auto shadow-2xl rounded-lg cursor-pointer" onclick="openImageModal('{{ asset('storage/' . $latestApprovedRevision->design_file) }}')">
+                    <div class="flex gap-2">
+                        @foreach($approvedFiles as $index => $file)
+                        @php
+                            $fileUrl = getDesignFileUrl($file);
+                        @endphp
+                        @if($fileUrl)
+                        <a href="{{ $fileUrl }}" target="_blank" class="text-sm font-bold text-primary flex items-center gap-1 hover:underline">
+                            <span class="material-symbols-outlined text-lg">download</span>
+                            File {{ $index + 1 }}
+                        </a>
+                        @endif
+                        @endforeach
                     </div>
+                </div>
+                <div class="p-6 space-y-4">
+                    @foreach($approvedFiles as $index => $file)
+                    <div class="bg-slate-50 rounded-xl border border-slate-200 overflow-hidden p-4">
+                        <p class="text-xs font-bold text-slate-600 mb-2">Side {{ $index + 1 }}</p>
+                        <div class="flex justify-center">
+                            @php
+                                $fileUrl = getDesignFileUrl($file);
+                            @endphp
+                            @if($fileUrl)
+                            <img src="{{ $fileUrl }}" alt="Design {{ $index + 1 }}" class="max-h-[400px] w-auto shadow-xl rounded-lg cursor-pointer" onclick="openImageModal('{{ $fileUrl }}')">
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
                 </div>
             </section>
             @endif
@@ -171,26 +198,17 @@
                 <div class="divide-y divide-slate-100">
                     @if($designTask->revisions->count() > 0)
                         @foreach($designTask->revisions->sortByDesc('version') as $revision)
-                        <div class="p-6 flex items-center justify-between">
-                            <div class="flex items-center gap-4">
-                                @if($revision->design_file)
-                                <div class="w-16 h-16 bg-slate-100 rounded-lg border border-slate-200 overflow-hidden">
-                                    <img src="{{ asset('storage/' . $revision->design_file) }}" alt="V{{ $revision->version }}" class="w-full h-full object-cover cursor-pointer" onclick="openImageModal('{{ asset('storage/' . $revision->design_file) }}')">
+                        <div class="p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-4">
+                                    <div>
+                                        <p class="font-bold text-slate-900">Version {{ $revision->version }}</p>
+                                        <p class="text-xs text-slate-500">{{ $revision->submitted_at->format('d/m/Y H:i') }}</p>
+                                        @if($revision->notes)
+                                        <p class="text-xs text-slate-600 mt-1">{{ Str::limit($revision->notes, 50) }}</p>
+                                        @endif
+                                    </div>
                                 </div>
-                                @else
-                                <div class="w-16 h-16 bg-slate-100 rounded-lg border border-slate-200 flex items-center justify-center">
-                                    <span class="material-symbols-outlined text-slate-400">image</span>
-                                </div>
-                                @endif
-                                <div>
-                                    <p class="font-bold text-slate-900">Version {{ $revision->version }}</p>
-                                    <p class="text-xs text-slate-500">{{ $revision->submitted_at->format('d/m/Y H:i') }}</p>
-                                    @if($revision->notes)
-                                    <p class="text-xs text-slate-600 mt-1">{{ Str::limit($revision->notes, 50) }}</p>
-                                    @endif
-                                </div>
-                            </div>
-                            <div class="flex items-center gap-2">
                                 <span class="px-2 py-1 text-xs font-semibold rounded-full
                                     @if($revision->status === 'approved') bg-green-100 text-green-700
                                     @elseif($revision->status === 'rejected') bg-red-100 text-red-700
@@ -199,10 +217,39 @@
                                     @endif">
                                     {{ ucfirst(str_replace('_', ' ', $revision->status)) }}
                                 </span>
-                                @if($revision->design_file)
-                                <a href="{{ asset('storage/' . $revision->design_file) }}" target="_blank" class="px-4 py-2 text-xs font-bold text-slate-600 hover:text-primary border border-slate-200 rounded-lg transition-colors">View Draft</a>
-                                @endif
                             </div>
+                            @php
+                                $designFiles = $revision->design_files;
+                            @endphp
+                            @if(count($designFiles) > 0)
+                            <div class="space-y-3">
+                                @foreach($designFiles as $index => $file)
+                                <div class="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                                    <div class="p-3">
+                                        <p class="text-xs font-bold text-slate-600 mb-2">Side {{ $index + 1 }}</p>
+                                        <div class="aspect-video w-full rounded-lg bg-white overflow-hidden border border-slate-200">
+                                            @php
+                                                $fileUrl = getDesignFileUrl($file);
+                                            @endphp
+                                            @if($fileUrl)
+                                            <img src="{{ $fileUrl }}" alt="Version {{ $revision->version }} - Side {{ $index + 1 }}" class="w-full h-full object-contain cursor-pointer hover:opacity-90 transition-opacity" onclick="openImageModal('{{ $fileUrl }}')">
+                                            @endif
+                                        </div>
+                                        @if($fileUrl)
+                                        <a href="{{ $fileUrl }}" target="_blank" class="mt-2 inline-block text-xs font-bold text-primary hover:underline">
+                                            View File {{ $index + 1 }}
+                                        </a>
+                                        @endif
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                            @else
+                            <div class="text-center py-4">
+                                <span class="material-symbols-outlined text-slate-300 text-4xl">image</span>
+                                <p class="text-xs text-slate-400 mt-2">No design files</p>
+                            </div>
+                            @endif
                         </div>
                         @endforeach
                     @else
@@ -216,6 +263,183 @@
 
         <!-- Right Column -->
         <div class="space-y-6">
+            <!-- Customer Information -->
+            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
+                    <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">person</span>
+                        Customer Information
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-bold text-lg">
+                            {{ strtoupper(substr($designTask->customer->name, 0, 2)) }}
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-bold text-slate-900">{{ $designTask->customer->name }}</p>
+                            <p class="text-sm text-slate-500">{{ $designTask->customer->email }}</p>
+                            @if($designTask->customer->role)
+                            <span class="inline-block mt-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-slate-100 text-slate-600">
+                                {{ $designTask->customer->role->name }}
+                            </span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Designer Information -->
+            @if($designTask->designer)
+            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
+                    <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">palette</span>
+                        Designer Information
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-lg">
+                            {{ strtoupper(substr($designTask->designer->name, 0, 2)) }}
+                        </div>
+                        <div class="flex-1">
+                            <p class="font-bold text-slate-900">{{ $designTask->designer->name }}</p>
+                            <p class="text-sm text-slate-500">{{ $designTask->designer->email }}</p>
+                            @if($designTask->designer->role)
+                            <span class="inline-block mt-1 px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-600">
+                                {{ $designTask->designer->role->name }}
+                            </span>
+                            @endif
+                            @if($isDesigner && $designTask->designer_id === auth()->id())
+                            <span class="inline-block mt-1 ml-2 px-2 py-0.5 text-xs font-semibold rounded-full bg-green-100 text-green-600">
+                                Assigned to You
+                            </span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </section>
+            @else
+            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
+                    <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">palette</span>
+                        Designer Information
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="text-center py-4">
+                        <span class="material-symbols-outlined text-slate-300 text-4xl mb-2">person_off</span>
+                        <p class="text-sm text-slate-500 font-semibold">No designer assigned</p>
+                        <p class="text-xs text-slate-400 mt-1">Waiting for designer to join</p>
+                    </div>
+                </div>
+            </section>
+            @endif
+
+            <!-- Edit History -->
+            <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-slate-100 bg-slate-50">
+                    <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-primary">history</span>
+                        Edit History
+                    </h3>
+                </div>
+                <div class="p-6">
+                    <div class="space-y-4">
+                        <!-- Created -->
+                        <div class="flex items-start gap-3 pb-4 border-b border-slate-100">
+                            <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                                <span class="material-symbols-outlined text-emerald-600 text-sm">add_circle</span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-semibold text-slate-900">Task Created</p>
+                                <p class="text-xs text-slate-500 mt-0.5">{{ $designTask->created_at->format('d/m/Y H:i') }}</p>
+                                <p class="text-xs text-slate-400 mt-1">by {{ $designTask->customer->name }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Updated (if different from created) -->
+                        @if($designTask->updated_at && $designTask->updated_at->ne($designTask->created_at))
+                        <div class="flex items-start gap-3 pb-4 border-b border-slate-100">
+                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                <span class="material-symbols-outlined text-blue-600 text-sm">edit</span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-semibold text-slate-900">Last Updated</p>
+                                <p class="text-xs text-slate-500 mt-0.5">{{ $designTask->updated_at->format('d/m/Y H:i') }}</p>
+                                @if($designTask->status !== 'pending')
+                                <p class="text-xs text-slate-400 mt-1">Status: <span class="font-semibold">{{ ucfirst($designTask->status) }}</span></p>
+                                @endif
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- Designer Assigned -->
+                        @if($designTask->designer_id)
+                        <div class="flex items-start gap-3 pb-4 border-b border-slate-100">
+                            <div class="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                                <span class="material-symbols-outlined text-purple-600 text-sm">person_add</span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-semibold text-slate-900">Designer Assigned</p>
+                                <p class="text-xs text-slate-500 mt-0.5">
+                                    @if($designTask->status === 'joined')
+                                        {{ $designTask->updated_at->format('d/m/Y H:i') }}
+                                    @else
+                                        {{ $designTask->created_at->format('d/m/Y H:i') }}
+                                    @endif
+                                </p>
+                                <p class="text-xs text-slate-400 mt-1">to {{ $designTask->designer->name }}</p>
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- Completed -->
+                        @if($designTask->completed_at)
+                        <div class="flex items-start gap-3 pb-4 border-b border-slate-100">
+                            <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                                <span class="material-symbols-outlined text-green-600 text-sm">check_circle</span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-semibold text-slate-900">Task Completed</p>
+                                <p class="text-xs text-slate-500 mt-0.5">{{ $designTask->completed_at->format('d/m/Y H:i') }}</p>
+                                @if($designTask->designer)
+                                <p class="text-xs text-slate-400 mt-1">by {{ $designTask->designer->name }}</p>
+                                @endif
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- Revision Count -->
+                        @if($designTask->revisions->count() > 0)
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
+                                <span class="material-symbols-outlined text-orange-600 text-sm">history</span>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-semibold text-slate-900">Revisions</p>
+                                <p class="text-xs text-slate-500 mt-0.5">{{ $designTask->revisions->count() }} revision(s) submitted</p>
+                                @php
+                                    $latestRevision = $designTask->revisions->sortByDesc('created_at')->first();
+                                @endphp
+                                @if($latestRevision)
+                                <p class="text-xs text-slate-400 mt-1">Latest: {{ $latestRevision->created_at->format('d/m/Y H:i') }}</p>
+                                @endif
+                            </div>
+                        </div>
+                        @endif
+
+                        @if(!$designTask->designer_id && !$designTask->completed_at && $designTask->revisions->count() === 0 && $designTask->updated_at->eq($designTask->created_at))
+                        <div class="text-center py-4">
+                            <p class="text-sm text-slate-400">No edit history yet</p>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+            </section>
+
             <!-- Timeline -->
             <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
                 <h3 class="font-bold text-slate-900 mb-6">Timeline</h3>
@@ -277,21 +501,46 @@
                 <div class="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4 bg-slate-50/50">
                     @if($designTask->comments->count() > 0)
                         @foreach($designTask->comments as $comment)
-                        <div class="flex gap-3 {{ $comment->type === 'customer' && $comment->user_id === auth()->id() ? 'flex-row-reverse' : '' }}">
-                            <div class="w-8 h-8 rounded-full {{ $comment->type === 'customer' && $comment->user_id === auth()->id() ? 'bg-primary' : 'bg-blue-600' }} flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold">
+                        @php
+                            $isMyComment = $comment->user_id === auth()->id();
+                            $isCustomerComment = $comment->type === 'customer';
+                            $isAdminComment = $comment->type === 'admin';
+                        @endphp
+                        <div class="flex gap-3 {{ $isMyComment ? 'flex-row-reverse' : '' }}">
+                            <div class="w-8 h-8 rounded-full 
+                                @if($isCustomerComment) bg-primary
+                                @elseif($isAdminComment) bg-purple-600
+                                @else bg-blue-600
+                                @endif flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold">
                                 {{ strtoupper(substr($comment->user->name, 0, 2)) }}
                             </div>
-                            <div class="space-y-1 {{ $comment->type === 'customer' && $comment->user_id === auth()->id() ? 'text-right' : '' }}">
-                                <div class="flex items-center {{ $comment->type === 'customer' && $comment->user_id === auth()->id() ? 'justify-end' : '' }} gap-2">
-                                    @if($comment->type === 'customer' && $comment->user_id === auth()->id())
+                            <div class="space-y-1 {{ $isMyComment ? 'text-right' : '' }}">
+                                <div class="flex items-center {{ $isMyComment ? 'justify-end' : '' }} gap-2">
+                                    @if($isMyComment)
                                     <span class="text-[10px] text-slate-400">{{ $comment->created_at->format('h:i A') }}</span>
-                                    <span class="text-xs font-bold text-slate-900">You</span>
+                                    <span class="text-xs font-bold text-slate-900">
+                                        You
+                                        @if($isAdminComment)
+                                        <span class="text-[10px] text-purple-600 font-normal">(Admin)</span>
+                                        @endif
+                                    </span>
                                     @else
-                                    <span class="text-xs font-bold text-slate-900">{{ $comment->user->name }}</span>
+                                    <span class="text-xs font-bold text-slate-900">
+                                        {{ $comment->user->name }}
+                                        @if($isAdminComment)
+                                        <span class="text-[10px] text-purple-600 font-normal">(Admin)</span>
+                                        @endif
+                                    </span>
                                     <span class="text-[10px] text-slate-400">{{ $comment->created_at->format('h:i A') }}</span>
                                     @endif
                                 </div>
-                                <div class="{{ $comment->type === 'customer' && $comment->user_id === auth()->id() ? 'bg-primary text-white rounded-2xl rounded-tr-none' : 'bg-white rounded-2xl rounded-tl-none border border-slate-200' }} p-3 text-sm {{ $comment->type === 'customer' && $comment->user_id === auth()->id() ? 'text-white shadow-sm inline-block max-w-[90%] text-left' : 'text-slate-700 shadow-sm' }}">
+                                <div class="
+                                    @if($isMyComment && $isCustomerComment) bg-primary text-white rounded-2xl rounded-tr-none text-white shadow-sm inline-block max-w-[90%] text-left
+                                    @elseif($isMyComment && $isAdminComment) bg-purple-100 border-2 border-purple-300 rounded-2xl rounded-tr-none text-slate-700 shadow-sm inline-block max-w-[90%] text-left
+                                    @elseif($isMyComment) bg-blue-100 border-2 border-blue-300 rounded-2xl rounded-tr-none text-slate-700 shadow-sm inline-block max-w-[90%] text-left
+                                    @elseif($isAdminComment) bg-purple-50 border-2 border-purple-200 rounded-2xl rounded-tl-none text-slate-700 shadow-sm
+                                    @else bg-white rounded-2xl rounded-tl-none border border-slate-200 text-slate-700 shadow-sm
+                                    @endif p-3 text-sm">
                                     {{ $comment->content }}
                                 </div>
                             </div>
@@ -305,7 +554,7 @@
                     <form method="POST" action="{{ route($routePrefix . '.design-comments.store', $designTask) }}" class="relative">
                         @csrf
                         <textarea name="content" rows="2" placeholder="Type a message..." required class="w-full border border-slate-200 rounded-xl p-3 pr-12 text-sm focus:ring-primary focus:border-primary resize-none custom-scrollbar"></textarea>
-                        <button type="submit" class="absolute right-2 bottom-2 p-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors">
+                        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors">
                             <span class="material-symbols-outlined text-sm font-bold">send</span>
                         </button>
                     </form>

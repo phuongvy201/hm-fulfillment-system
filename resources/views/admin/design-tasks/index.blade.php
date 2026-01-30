@@ -3,14 +3,26 @@
 @section('title', 'Design Tasks - ' . config('app.name', 'Laravel'))
 
 @section('header-title', 'Design Tasks')
-@section('header-subtitle', 'Manage and track all design tasks')
+@section('header-subtitle')
+@if($isCustomer)
+    Manage your design requests
+@elseif($isDesigner && !$isSuperAdmin)
+    Assigned and available design tasks
+@elseif($isFulfillmentStaff)
+    Manage and track all design tasks
+@else
+    Manage and track all design tasks
+@endif
+@endsection
 
 @section('header-actions')
 <div class="flex items-center gap-3">
+    @if($isCustomer || $isSuperAdmin || $isFulfillmentStaff)
     <a href="{{ route($routePrefix . '.design-tasks.create') }}" class="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all shadow-sm bg-primary hover:bg-orange-600 flex items-center gap-2">
         <span class="material-symbols-outlined text-sm">add</span>
         + Create Design Task
     </a>
+    @endif
 </div>
 @endsection
 
@@ -75,8 +87,8 @@
                         </select>
                     </div>
                     
-                    @if(!$isCustomer)
-                    <!-- Customer Filter -->
+                    @if($isSuperAdmin || $isFulfillmentStaff)
+                    <!-- Customer Filter - Only for Super Admin and Fulfillment Staff -->
                     <div class="relative">
                         <select 
                             name="customer_id" 
@@ -88,6 +100,23 @@
                             @foreach($customers ?? [] as $customer)
                                 <option value="{{ $customer->id }}" {{ request('customer_id') == $customer->id ? 'selected' : '' }}>
                                     {{ $customer->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    
+                    <!-- Designer Filter - Only for Super Admin and Fulfillment Staff -->
+                    <div class="relative">
+                        <select 
+                            name="designer_id" 
+                            onchange="this.form.submit()"
+                            class="px-4 py-3 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 transition-all text-sm font-semibold text-slate-700 appearance-none cursor-pointer pr-10"
+                            style="background-image: url('data:image/svg+xml;charset=UTF-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23334155\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpath d=\'M6 9l6 6 6-6\'/%3E%3C/svg%3E'); background-repeat: no-repeat; background-position: right 0.75rem center; background-size: 1rem;"
+                        >
+                            <option value="">All Designers</option>
+                            @foreach($designers ?? [] as $designer)
+                                <option value="{{ $designer->id }}" {{ request('designer_id') == $designer->id ? 'selected' : '' }}>
+                                    {{ $designer->name }}
                                 </option>
                             @endforeach
                         </select>
@@ -147,7 +176,9 @@
             <!-- Designer Info -->
             @if($task->designer)
             <div class="p-3 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center text-sm border-b border-slate-100 dark:border-slate-800">
-                <span class="text-slate-500 dark:text-slate-400">Assigned to:</span>
+                <span class="text-slate-500 dark:text-slate-400">
+                    @if($isCustomer) Designer: @else Assigned to: @endif
+                </span>
                 <div class="flex items-center gap-2">
                     <span class="font-semibold text-blue-600 dark:text-blue-400">{{ $task->designer->name }}</span>
                     @if($isDesigner && $task->designer_id === auth()->id())
@@ -155,10 +186,10 @@
                     @endif
                 </div>
             </div>
-            @elseif($isDesigner)
+            @elseif($isDesigner || $isSuperAdmin || $isFulfillmentStaff)
             <div class="p-3 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center text-sm border-b border-slate-100 dark:border-slate-800">
                 <span class="text-slate-500 dark:text-slate-400">Status:</span>
-                <span class="font-semibold text-slate-600 dark:text-slate-400">No designer</span>
+                <span class="font-semibold text-orange-600 dark:text-orange-400">Available - No designer assigned</span>
             </div>
             @endif
 
@@ -174,7 +205,7 @@
                     <img 
                         alt="Mockup Reference" 
                         class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                        src="{{ asset('storage/' . $firstMockup) }}"
+                        src="{{ getDesignFileUrl($firstMockup) }}"
                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'225\'%3E%3Crect fill=\'%23f1f5f9\' width=\'400\' height=\'225\'/%3E%3Ctext fill=\'%2394a3b8\' x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' font-size=\'14\'%3ENo Image%3C/text%3E%3C/svg%3E'"
                     >
                     <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
@@ -206,24 +237,65 @@
             <!-- Footer -->
             <div class="px-4 py-4 border-t border-slate-100 dark:border-slate-800 space-y-4">
                 <div class="flex justify-between items-start text-xs">
+                    @if($isSuperAdmin || $isFulfillmentStaff)
                     <div>
                         <p class="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">CUSTOMER</p>
                         <p class="font-bold text-slate-700 dark:text-slate-300 mt-0.5">{{ $task->customer->name }}</p>
                     </div>
-                    <div class="text-right">
+                    @endif
+                    <div class="{{ $isSuperAdmin || $isFulfillmentStaff ? 'text-right' : 'w-full' }}">
                         <p class="text-slate-400 dark:text-slate-500 font-bold uppercase tracking-tighter">CREATED</p>
                         <p class="font-medium text-slate-600 dark:text-slate-400 mt-0.5">{{ $task->created_at->format('d/m/Y H:i') }}</p>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 gap-2">
+                    <!-- View Details - Available for all roles -->
                     <a href="{{ route($routePrefix . '.design-tasks.show', $task) }}" class="w-full py-2.5 rounded-lg bg-blue-600 text-white font-bold text-sm hover:bg-blue-700 transition-colors text-center">
                         View Details
                     </a>
-                    @if($isDesigner && $task->status === 'completed' && $task->designer_id === auth()->id())
-                    <a href="{{ route($routePrefix . '.design-tasks.show', $task) }}" class="w-full py-2.5 rounded-lg bg-primary text-white font-bold text-sm hover:bg-orange-600 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
-                        <span class="material-symbols-outlined text-sm">edit</span>
-                        Update Design
-                    </a>
+                    
+                    <!-- Customer Actions -->
+                    @if($isCustomer)
+                        @if($task->status === 'pending' || $task->status === 'revision')
+                        <a href="{{ route($routePrefix . '.design-tasks.edit', $task) }}" class="w-full py-2.5 rounded-lg bg-slate-600 text-white font-bold text-sm hover:bg-slate-700 transition-colors text-center flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                            Edit Task
+                        </a>
+                        @endif
+                    @endif
+                    
+                    <!-- Designer Actions -->
+                    @if($isDesigner && !$isSuperAdmin)
+                        @if(!$task->designer_id && $task->status === 'pending')
+                        <form method="POST" action="{{ route($routePrefix . '.design-tasks.join', $task) }}" class="w-full">
+                            @csrf
+                            <button type="submit" class="w-full py-2.5 rounded-lg bg-green-600 text-white font-bold text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-sm">person_add</span>
+                                Join Task
+                            </button>
+                        </form>
+                        @elseif($task->designer_id === auth()->id() && $task->status === 'completed')
+                        <a href="{{ route($routePrefix . '.design-tasks.show', $task) }}" class="w-full py-2.5 rounded-lg bg-primary text-white font-bold text-sm hover:bg-orange-600 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                            Update Design
+                        </a>
+                        @endif
+                    @endif
+                    
+                    <!-- Super Admin Actions -->
+                    @if($isSuperAdmin)
+                        <a href="{{ route($routePrefix . '.design-tasks.edit', $task) }}" class="w-full py-2.5 rounded-lg bg-slate-600 text-white font-bold text-sm hover:bg-slate-700 transition-colors text-center flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                            Edit Task
+                        </a>
+                    @endif
+                    
+                    <!-- Fulfillment Staff Actions -->
+                    @if($isFulfillmentStaff)
+                        <a href="{{ route($routePrefix . '.design-tasks.edit', $task) }}" class="w-full py-2.5 rounded-lg bg-slate-600 text-white font-bold text-sm hover:bg-slate-700 transition-colors text-center flex items-center justify-center gap-2">
+                            <span class="material-symbols-outlined text-sm">edit</span>
+                            Edit Task
+                        </a>
                     @endif
                 </div>
             </div>
@@ -235,10 +307,22 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path>
                 </svg>
                 <h3 class="mt-4 text-lg font-semibold text-slate-900 dark:text-white">No Design Tasks Found</h3>
-                <p class="mt-2 text-sm text-slate-500">No design tasks found matching the filters.</p>
-                @if(!$isDesigner)
+                <p class="mt-2 text-sm text-slate-500">
+                    @if($isCustomer)
+                        You don't have any design tasks yet. Create your first task!
+                    @elseif($isDesigner && !$isSuperAdmin)
+                        No tasks assigned to you or waiting for designer.
+                    @else
+                        No design tasks found matching the filters.
+                    @endif
+                </p>
+                @if($isCustomer || $isSuperAdmin || $isFulfillmentStaff)
                 <a href="{{ route($routePrefix . '.design-tasks.create') }}" class="mt-4 inline-block px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors">
-                    Create Your First Design Task
+                    @if($isCustomer)
+                        Create Your First Design Task
+                    @else
+                        Create New Design Task
+                    @endif
                 </a>
                 @endif
             </div>

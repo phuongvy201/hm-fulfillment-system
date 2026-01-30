@@ -26,6 +26,25 @@ class DesignRevision extends Model
     ];
 
     /**
+     * Get design files as array (handles both single file and JSON array)
+     */
+    public function getDesignFilesAttribute()
+    {
+        if (!$this->design_file) {
+            return [];
+        }
+
+        // Try to decode as JSON (multiple files)
+        $decoded = json_decode($this->design_file, true);
+        if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+            return $decoded;
+        }
+
+        // Return as single file array
+        return [$this->design_file];
+    }
+
+    /**
      * Get the design task that owns this revision.
      */
     public function designTask(): BelongsTo
